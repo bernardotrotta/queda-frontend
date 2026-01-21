@@ -1,12 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Home() {
-    const [codiceCoda, setCodiceCoda] = useState("");
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     return (
         <main className="bg-slate-50 min-h-screen flex flex-col items-center justify-center px-8 py-12 ">
@@ -20,7 +16,6 @@ export default function Home() {
                     <input
                         type="text"
                         className="w-full mb-4 p-4 bg-slate-100 rounded-2xl text-slate-500 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
-                        onChange={(e) => setCodiceCoda(e.target.value)}
                     />
 
                     <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
@@ -29,9 +24,8 @@ export default function Home() {
                     <input
                         type="text"
                         className="w-full mb-4 p-4 bg-slate-100 rounded-2xl text-slate-500 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
-                        onChange={(e) => setCodiceCoda(e.target.value)}
                     />
-                    <Link href={`/utente?coda=${codiceCoda}`}>
+                    <Link href={``}>
                         <button className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
                             Accedi
                         </button>
