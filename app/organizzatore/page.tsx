@@ -30,9 +30,9 @@ export default function Home() {
                 </div>
 
                 <div className="relative flex py-5 items-center">
-                    <div className="flex-grow border-t border-slate-200"></div>
-                    <span className="flex-shrink mx-4 text-slate-400 text-sm font-bold uppercase">Oppure</span>
-                    <div className="flex-grow border-t border-slate-200"></div>
+                    <div className="grow border-t border-slate-200"></div>
+                    <span className="shrink mx-4 text-slate-400 text-sm font-bold uppercase">Oppure</span>
+                    <div className="grow border-t border-slate-200"></div>
                 </div>
 
                 {/* Creazione di una nuova coda */}

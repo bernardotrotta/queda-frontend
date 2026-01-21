@@ -9,7 +9,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-4">
+    <div className="min-h-screen bg-slate-100 flex flex-col items-center">
 
       <header className="flex justify-end w-full px-8 py-4">
         {isLoggedIn ? (
@@ -32,19 +32,19 @@ export default function Home() {
         )}
       </header>
 
-      <main className="bg-slate-50 flex-grow flex flex-col items-center justify-center px-8 py-12 ">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-10 border border-slate-100">
-          <h1 className="text-4xl font-black text-center text-indigo-600 mb-10">QUEDA</h1>
+      <main className="grow flex flex-col items-center py-8 px-8">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100">
+          <h1 className="text-4xl font-black text-center text-indigo-600 mb-12">QUEDA</h1>
 
           {/* Accesso ad una coda gia esistente */}
-          <div className="mb-8">
+          <div className="mb-4">
             <label className="block px-4 uppercase text-sm font-bold text-slate-700 mb-2 tracking-wide">
               Inserisci Codice Coda
             </label>
             <input
               type="text"
               placeholder="XXXX-XXXX"
-              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-xl font-mono"
+              className="w-full p-4 bg-slate-100 rounded-2xl text-slate-500 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
               onChange={(e) => setCodiceCoda(e.target.value)}
             />
             <Link href={`/utente?coda=${codiceCoda}`}>
@@ -55,9 +55,9 @@ export default function Home() {
           </div>
 
           <div className="relative flex py-5 items-center">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-sm font-bold uppercase">Oppure</span>
-            <div className="flex-grow border-t border-slate-200"></div>
+            <div className="grow border-t border-slate-200"></div>
+            <span className="shrink mx-4 text-slate-400 text-sm font-bold uppercase">Oppure</span>
+            <div className="grow border-t border-slate-200"></div>
           </div>
 
           {/* Creazione di una nuova coda */}
