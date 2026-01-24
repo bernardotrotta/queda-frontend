@@ -9,7 +9,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center">
+    <div className="min-h-screen bg-slate-200 flex flex-col items-center">
 
       <header className="flex justify-end w-full px-8 py-4">
         {isLoggedIn ? (
@@ -47,11 +47,19 @@ export default function Home() {
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-500 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
               onChange={(e) => setCodiceCoda(e.target.value)}
             />
-            <Link href={`/utente?coda=${codiceCoda}`}>
-              <button className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-                Partecipa come Utente
-              </button>
-            </Link>
+            {isLoggedIn ? (
+              <Link href={`/utente?coda=${codiceCoda}`}>
+                <button className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                  Partecipa come Utente
+                </button>
+              </Link>
+            ) : (
+              <Link href={`/login`}>
+                <button className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                  Partecipa come Utente
+                </button>
+              </Link>
+            )}
           </div>
 
           <div className="relative flex py-5 items-center">
@@ -61,11 +69,19 @@ export default function Home() {
           </div>
 
           {/* Creazione di una nuova coda */}
-          <Link href="/organizzatore/crea">
-            <button className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-50 transition-all">
-              Crea una Nuova Coda
-            </button>
-          </Link>
+          {isLoggedIn ? (
+            <Link href="/organizzatore/crea">
+              <button className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-50 transition-all">
+                Crea una Nuova Coda
+              </button>
+            </Link>
+          ) : (
+            <Link href="/login">
+              <button className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-50 transition-all">
+                Crea una Nuova Coda
+              </button>
+            </Link>
+          )}
         </div>
       </main>
     </div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function Home() {
 
     return (
-        <main className="bg-slate-50 min-h-screen flex flex-col items-center justify-center px-8 py-12 ">
+        <main className="bg-slate-200 min-h-screen flex flex-col items-center justify-center px-8 py-12 ">
             <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-10 border border-slate-100">
                 <h1 className="text-4xl font-black text-center text-indigo-600 mb-10">Sign In</h1>
 
