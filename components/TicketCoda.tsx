@@ -30,8 +30,8 @@ export default function TicketCoda({ numero, isUser, tempoInizialeMinuti }: Tick
 
     return (
         <div className={`
-      relative flex flex-col items-center justify-center 
-      w-full h-fit rounded-full transition-all duration-500 p-2
+      relative flex flex-row items-center justify-center py-2 px-8
+      w-full h-fit rounded-full transition-all duration-500 
       ${isUser ? 'bg-white border-2 border-indigo-500' : 'bg-slate-50 opacity-60'}
     `}>
             {/* Se è il turno dell'utente, mostra la barra del tempo */}
@@ -43,7 +43,10 @@ export default function TicketCoda({ numero, isUser, tempoInizialeMinuti }: Tick
                     />
                 </div>
             )}
-            <span className="relative z-10 text-3xl font-black text-slate-800">#{numero}</span>
+            <span className="mr-auto z-10 text-3xl font-black text-slate-800">#{numero}</span>
+            {isUser && (
+                <span className="ml-4 z-10 text-3xl font-black text-slate-800">00:00:00</span>
+            )}
         </div>
     );
 }
