@@ -53,10 +53,10 @@ export default function CreaCoda() {
                     </div>
 
                     <div>
-                        <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">Durata media di un turno</label>
+                        <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">Durata media di un turno (minuti)</label>
                         <input
                             type="number"
-                            className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none"
+                            className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent text-slate-700 focus:border-indigo-500 outline-none"
                             value={tempoMedio}
                             onChange={(e) => setTempoMedio(parseInt(e.target.value))}
                         />
