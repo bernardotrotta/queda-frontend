@@ -17,13 +17,14 @@ export default function Login() {
 
     try {
       // Invia la richiesta al servizio di login del backend
-
-      const response = await fetch(`${process.env.BACKEND_URI}/login`, {
-        //RICORDA SOSTITUIRE PORT
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URI}/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        },
+      );
 
       const data = await response.json();
 

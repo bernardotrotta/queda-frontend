@@ -42,19 +42,27 @@ export default function SignIn() {
 
     try {
       // Effettua la chiamata al servizio signUser del backend
-      const response = await fetch(`${process.env.BACKEND_URI}/register`, {
-        // SOSTITUIRE PORT
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URI}/signup`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        },
+      );
+
+      console.log(process.env.BACKEND_URI);
 
       const data = await response.json();
+
+      console.log(data);
 
       if (!response.ok) {
         // Cattura gli errori dal backend
         throw new Error(data.message || "Errore durante la registrazione");
       }
+
+      console.log("Errore");
 
       // In caso di successo, reindirizza al login
       router.push("/login");
