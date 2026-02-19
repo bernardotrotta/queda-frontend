@@ -5,100 +5,109 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function Login() {
-    // Inizializza gli stati per le credenziali e gli errori
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const router = useRouter();
+  // Inizializza gli stati per le credenziali e gli errori
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
 
-        try {
-            // Invia la richiesta al servizio di login del backend
-            const response = await fetch("http://localhost:port/login", { //RICORDA SOSTITUIRE PORT
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-            });
+    try {
+      // Invia la richiesta al servizio di login del backend
 
-            const data = await response.json();
+      const response = await fetch(`${process.env.BACKEND_URI}/login`, {
+        //RICORDA SOSTITUIRE PORT
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-            if (!response.ok) {
-                // Gestisce gli errori definiti nel backend
-                throw new Error(data.message || "Credenziali non valide");
-            }
+      const data = await response.json();
 
-            // Salva il token JWT restituito da loginUser 
-            localStorage.setItem("token", data.token);
+      if (!response.ok) {
+        // Gestisce gli errori definiti nel backend
+        throw new Error(data.message || "Credenziali non valide");
+      }
 
-            // Reindirizza alla home dopo il successo
-            router.push("/");
-        } catch (err: any) {
-            setError(err.message);
-        }
-    };
+      // Salva il token JWT restituito da loginUser
+      localStorage.setItem("token", data.token);
 
-    return (
-        <main className="bg-slate-200 min-h-screen flex flex-col items-center justify-center px-8 py-12 ">
-            <form
-                onSubmit={handleLogin}
-                className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100"
-            >
-                <h1 className="text-4xl font-black text-center text-indigo-600 mb-12">Login</h1>
+      // Reindirizza alla home dopo il successo
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
 
-                {error && (
-                    <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold text-center border border-red-100">
-                        {error}
-                    </div>
-                )}
+  return (
+    <main className="bg-slate-200 min-h-screen flex flex-col items-center justify-center px-8 py-12 ">
+      <form
+        onSubmit={handleLogin}
+        className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100"
+      >
+        <h1 className="text-4xl font-black text-center text-indigo-600 mb-12">
+          Login
+        </h1>
 
-                <div className="mb-4">
-                    <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
-                        Email
-                    </label>
-                    <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full mb-4 p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
-                        placeholder="esempio@mail.com"
-                    />
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold text-center border border-red-100">
+            {error}
+          </div>
+        )}
 
-                    <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
-                        Password
-                    </label>
-                    <input
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full mb-4 p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
-                        placeholder="••••••••"
-                    />
+        <div className="mb-4">
+          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+            Email
+          </label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full mb-4 p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
+            placeholder="esempio@mail.com"
+          />
 
-                    <button
-                        type="submit"
-                        className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
-                    >
-                        Accedi
-                    </button>
-                </div>
+          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+            Password
+          </label>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full mb-4 p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
+            placeholder="••••••••"
+          />
 
-                <div className="relative flex py-5 items-center">
-                    <div className="grow border-t border-slate-200"></div>
-                    <span className="shrink mx-4 text-slate-400 text-sm font-bold uppercase text-center">Oppure</span>
-                    <div className="grow border-t border-slate-200"></div>
-                </div>
+          <button
+            type="submit"
+            className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+          >
+            Accedi
+          </button>
+        </div>
 
-                <Link href="/signin">
-                    <button type="button" className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-700 hover:text-slate-200 transition-all duration-300">
-                        Registrati
-                    </button>
-                </Link>
-            </form>
-        </main>
-    );
+        <div className="relative flex py-5 items-center">
+          <div className="grow border-t border-slate-200"></div>
+          <span className="shrink mx-4 text-slate-400 text-sm font-bold uppercase text-center">
+            Oppure
+          </span>
+          <div className="grow border-t border-slate-200"></div>
+        </div>
+
+        <Link href="/signin">
+          <button
+            type="button"
+            className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-700 hover:text-slate-200 transition-all duration-300"
+          >
+            Registrati
+          </button>
+        </Link>
+      </form>
+    </main>
+  );
 }
