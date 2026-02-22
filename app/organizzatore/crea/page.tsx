@@ -2,36 +2,60 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { jwtDecode } from "jwt-decode";
+
 
 export default function CreaCoda() {
   const [nomeCoda, setNomeCoda] = useState("");
   const [tempoMedio, setTempoMedio] = useState(10);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSalvaCoda = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Devi aver effettuato il login per creare una coda.");
+      router.push("/login");
+      return;
+    }
 
     try {
-      // Invia i dati al backend per inizializzare la coda
-      const response = await fetch("${process.env.BACKEND_URI}/api/queues", {
+      // Estrae l'ID dell'utente dal JWT per passarlo al backend
+      const decoded: any = jwtDecode(token);
+      const userId = decoded.id;
+
+      // Effettua la chiamata all'endpoint del backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queue/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Authorization": `Bearer ${token}`, 
         },
         body: JSON.stringify({
-          nome: nomeCoda,
-          tempoStimato: tempoMedio,
-          users: [], // La coda nasce vuota
+          user: userId,
+          // Nota: 'name' e 'tempoMedio' sono inviati ma il backend attuale 
+          // sovrascrive 'name' con un valore predefinito nel service.
+          name: nomeCoda 
         }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        router.push(`/organizzatore/dashboard?coda=${data.id}`);
+        // Il backend risponde con { message: 'Created' }
+        // Il backend deve restituire l'ID della nuova coda <-------------------------------------------------------------
+        // attualmente reindirizza alla dashboard generale.
+        router.push("/organizzatore/dashboard");
+      } else {
+        const errorData = await response.json();
+        alert(`Errore: ${errorData.message || "Impossibile creare la coda"}`);
       }
     } catch (error) {
-      console.error("Errore nella creazione:", error);
+      console.error("Errore nella creazione della coda:", error);
+      alert("Si è verificato un errore di rete.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,10 +77,14 @@ export default function CreaCoda() {
             <input
               required
               type="text"
-              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none"
+              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none text-slate-700 transition-all"
               placeholder="Es: Ufficio Studenti"
+              value={nomeCoda}
               onChange={(e) => setNomeCoda(e.target.value)}
             />
+            <p className="text-[10px] text-slate-400 mt-1 px-4 italic">
+              * Nota: Il backend attuale potrebbe rinominarla automaticamente.
+            </p>
           </div>
 
           <div>
@@ -65,7 +93,7 @@ export default function CreaCoda() {
             </label>
             <input
               type="number"
-              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent text-slate-700 focus:border-indigo-500 outline-none"
+              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent text-slate-700 focus:border-indigo-500 outline-none transition-all"
               value={tempoMedio}
               onChange={(e) => setTempoMedio(parseInt(e.target.value))}
             />
@@ -73,9 +101,10 @@ export default function CreaCoda() {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50"
           >
-            GENERA CODICE SESSIONE
+            {loading ? "CREAZIONE IN CORSO..." : "SALVA E AVVIA"}
           </button>
         </div>
       </form>

@@ -55,6 +55,7 @@ export default function DashboardOrganizzatore() {
 
     return (
         <main className="min-h-screen bg-slate-100 p-8 flex flex-col items-center">
+            <h1 className="text-xl my-8 font-black text-slate-700 uppercase tracking-widest">Caricamento...</h1>
             {/* Header con Codice Sessione */}
             <div className="w-full max-w-4xl bg-white rounded-3xl p-8 shadow-lg mb-8 flex justify-between items-center border-b-4 border-indigo-500">
                 <div>
