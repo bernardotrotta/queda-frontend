@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function SignIn() {
-  // Gestisce i dati del form in un unico oggetto di stato
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -16,7 +15,6 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Aggiorna i campi dinamicamente
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -25,14 +23,12 @@ export default function SignIn() {
     e.preventDefault();
     setError("");
 
-    // Controllo Campi Obbligatori
     const { username, email, password, confirmPassword } = formData;
     if (!username || !email || !password || !confirmPassword) {
       setError("Tutti i campi sono obbligatori.");
       return;
     }
 
-    // Controllo Corrispondenza Password
     if (password !== confirmPassword) {
       setError("Le password non coincidono.");
       return;
@@ -41,30 +37,24 @@ export default function SignIn() {
     setLoading(true);
 
     try {
-      // Effettua la chiamata al servizio signUser del backend
+      // Invia i dati all'endpoint corretto definito nel server
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URI}/signup`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URI}/auth/signup`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(formData), // Invia username, email, password e confirmPassword
         },
       );
 
-      console.log(process.env.BACKEND_URI);
-
       const data = await response.json();
 
-      console.log(data);
-
       if (!response.ok) {
-        // Cattura gli errori dal backend
-        throw new Error(data.message || "Errore durante la registrazione");
+        // Estrae il messaggio d'errore o i dettagli della validazione
+        throw new Error(data.error || "Errore durante la registrazione");
       }
 
-      console.log("Errore");
-
-      // In caso di successo, reindirizza al login
+      // Reindirizza l'utente alla pagina di login dopo la creazione dell'account
       router.push("/login");
     } catch (err: any) {
       setError(err.message);
@@ -83,7 +73,6 @@ export default function SignIn() {
           Sign Up
         </h1>
 
-        {/* Feedback Visivo: L'applicazione mostra il messaggio d'errore se la validazione fallisce */}
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold text-center border border-red-100">
             {error}
@@ -98,6 +87,7 @@ export default function SignIn() {
             <input
               name="username"
               type="text"
+              required
               onChange={handleChange}
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono"
               placeholder="Il tuo nome"
@@ -111,6 +101,7 @@ export default function SignIn() {
             <input
               name="email"
               type="email"
+              required
               onChange={handleChange}
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono"
               placeholder="esempio@mail.com"
@@ -124,6 +115,7 @@ export default function SignIn() {
             <input
               name="password"
               type="password"
+              required
               onChange={handleChange}
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono"
               placeholder="••••••••"
@@ -137,6 +129,7 @@ export default function SignIn() {
             <input
               name="confirmPassword"
               type="password"
+              required
               onChange={handleChange}
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono"
               placeholder="Ripeti password"

@@ -5,41 +5,44 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function Login() {
-  // Inizializza gli stati per le credenziali e gli errori
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      // Invia la richiesta al servizio di login del backend
+      // Invia le credenziali all'endpoint di login dedicato
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URI}/login`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URI}/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password }), // Trasmette i dati richiesti dal servizio di login
         },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Gestisce gli errori definiti nel backend
-        throw new Error(data.message || "Credenziali non valide");
+        // Estrae il messaggio di errore strutturato dal middleware del backend
+        throw new Error(data.error || "Credenziali non valide");
       }
 
-      // Salva il token JWT restituito da loginUser
+      // Memorizza il token JWT nel database locale del browser
       localStorage.setItem("token", data.token);
 
-      // Reindirizza alla home dopo il successo
+      // Indirizza l'utente alla pagina principale dopo l'autenticazione
       router.push("/");
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,9 +89,10 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+            disabled={loading}
+            className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
           >
-            Accedi
+            {loading ? "Accesso in corso..." : "Accedi"}
           </button>
         </div>
 
