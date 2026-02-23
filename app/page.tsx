@@ -1,8 +1,7 @@
-"use client"; // Abilita l'interattività lato client
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { jwtDecode } from "jwt-decode";
 import { useRouter } from "next/navigation";
 
@@ -16,6 +15,7 @@ export default function Home() {
   useEffect(() => {
     // Recupera il token dal localStorage per verificare la sessione
     const token = localStorage.getItem("token");
+
     if (token) {
       setIsLoggedIn(true);
       try {
@@ -30,26 +30,23 @@ export default function Home() {
     }
   }, []);
 
+  // ... (import invariati)
   const gestisciPartecipazione = async () => {
-    setErroreCoda(""); // Resetta eventuali errori precedenti
-
+    setErroreCoda("");
     try {
-      // Effettua una chiamata al backend per verificare l'esistenza della coda
-      // Utilizza l'endpoint che recupera gli elementi della coda per validare l'ID
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error("Codice sessione non valido o scaduto.");
+        // Estrae il messaggio 'error' inviato dal middleware o usa un fallback
+        throw new Error(data.error || "ID Coda non trovato o non valido");
       }
-
-      // Reindirizza l'utente alla pagina della coda se la validazione ha successo
       router.push(`/utente?coda=${codiceCoda}`);
     } catch (err: any) {
       setErroreCoda(err.message);
     }
   };
+  // ...
 
   return (
     <div className="min-h-screen bg-slate-200 flex flex-col items-center">
@@ -58,13 +55,9 @@ export default function Home() {
           <Link href="/account" className="group">
             <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl shadow-sm border-2 border-slate-100 hover:border-indigo-500 transition-all">
               <span className="text-slate-700 font-bold">{user?.username}</span>
-              <div className="relative rounded-full size-8 overflow-hidden border-indigo-500">
-                <Image
-                  src="/images/user.png"
-                  alt="Account"
-                  fill
-                  className="object-cover"
-                />
+              {/* Avatar testuale coerente con la pagina account */}
+              <div className="size-8 bg-indigo-100 rounded-full flex items-center justify-center text-xs text-indigo-600 font-black">
+                {user?.username?.[0].toUpperCase()}
               </div>
             </div>
           </Link>
@@ -77,33 +70,34 @@ export default function Home() {
         )}
       </header>
 
-      <main className="grow flex flex-col items-center py-8 px-8">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100">
-          <h1 className="text-4xl font-black text-center text-indigo-600 mb-12">
+      <main className="grow flex flex-col items-center py-8 px-8 w-full">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100 shrink-0">
+          <h1 className="text-4xl font-black text-center text-indigo-600 mb-12 uppercase tracking-tighter">
             QUEDA
           </h1>
 
           <div className="mb-4">
             <label className="block px-4 uppercase text-sm font-bold text-slate-700 mb-2 tracking-wide">
-              Inserisci Codice Coda
+              Codice Sessione
             </label>
             <input
               type="text"
-              placeholder="ID della Coda"
+              placeholder="Inserisci ID Coda"
               value={codiceCoda}
-              className={`w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 outline-none transition-all font-mono ${
-                erroreCoda
-                  ? "border-red-500"
-                  : "border-transparent focus:border-indigo-500"
-              }`}
+              className={`w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 outline-none transition-all font-mono ${erroreCoda
+                ? "border-red-500"
+                : "border-transparent focus:border-indigo-500"
+                }`}
               onChange={(e) => setCodiceCoda(e.target.value)}
             />
 
-            {erroreCoda && (
-              <p className="text-red-500 text-xs mt-2 px-4 font-bold">
-                {erroreCoda}
-              </p>
-            )}
+            <div className="min-h-5">
+              {erroreCoda && (
+                <p className="text-red-500 text-xs mt-2 px-4 font-bold leading-tight">
+                  {erroreCoda}
+                </p>
+              )}
+            </div>
 
             <button
               onClick={gestisciPartecipazione}

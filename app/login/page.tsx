@@ -17,27 +17,27 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Invia le credenziali all'endpoint di login dedicato
+      // Invia le credenziali all'endpoint di autenticazione 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URI}/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }), // Trasmette i dati richiesti dal servizio di login
+          body: JSON.stringify({ email, password }),
         },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Estrae il messaggio di errore strutturato dal middleware del backend
-        throw new Error(data.error || "Credenziali non valide");
-      }
+        // Estrae il messaggio d'errore specifico (es. "Invalid credentials") dal backend 
+        throw new Error(data.error || "Impossibile completare l'accesso");
+      }  
+      
+      // Memorizza il token JWT ricevuto nel payload della risposta [cite: 5, 12]
+      localStorage.setItem("token", data.payload);
 
-      // Memorizza il token JWT nel database locale del browser
-      localStorage.setItem("token", data.token);
-
-      // Indirizza l'utente alla pagina principale dopo l'autenticazione
+      // Reindirizza l'utente alla home page
       router.push("/");
     } catch (err: any) {
       setError(err.message);
@@ -52,7 +52,7 @@ export default function Login() {
         onSubmit={handleLogin}
         className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100"
       >
-        <h1 className="text-4xl font-black text-center text-indigo-600 mb-12">
+        <h1 className="text-4xl font-black text-center text-indigo-600 mb-12 uppercase tracking-tighter">
           Login
         </h1>
 
@@ -63,7 +63,7 @@ export default function Login() {
         )}
 
         <div className="mb-4">
-          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
             Email
           </label>
           <input
@@ -75,7 +75,7 @@ export default function Login() {
             placeholder="esempio@mail.com"
           />
 
-          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
             Password
           </label>
           <input
@@ -107,7 +107,7 @@ export default function Login() {
         <Link href="/signin">
           <button
             type="button"
-            className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-700 hover:text-slate-200 transition-all duration-300"
+            className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-700 hover:text-slate-200 transition-all duration-300 uppercase text-sm"
           >
             Registrati
           </button>

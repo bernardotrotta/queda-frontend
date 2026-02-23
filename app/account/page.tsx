@@ -2,62 +2,61 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { jwtDecode } from "jwt-decode";
 import Link from "next/link";
+import { Queue } from "@/types/queue";
+
+// Rappresenta i dati anagrafici dell'utente estratti dal database
+interface UserInfo {
+  _id: string;
+  email: string;
+  username: string;
+}
 
 export default function AccountPage() {
-  const [user, setUser] = useState<{ id: string; username: string } | null>(null);
-  const [queues, setQueues] = useState([]);
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [queues, setQueues] = useState<Queue[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    // Recupera il token per autenticare le chiamate ai servizi protetti
     const token = localStorage.getItem("token");
 
     if (!token) {
-      // Reindirizza al login se il token è assente
+      // Reindirizza al login in mancanza di una sessione valida
       router.push("/login");
       return;
     }
 
-    try {
-      // Decodifica il token per ottenere ID e username
-      const decoded: any = jwtDecode(token);
-      setUser({ id: decoded.id, username: decoded.username });
+    const fetchData = async () => {
+      try {
+        const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
 
-      // Recupera le code associate all'utente
-      const fetchQueues = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URI}/users/${decoded.id}/queues`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`, // Invia il token per l'autenticazione
-              },
-            }
-          );
+        const userRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me`, { headers });
+        const userData = await userRes.json();
+        if (!userRes.ok) throw new Error(userData.error || "Errore nel recupero profilo");
 
-          if (response.ok) {
-            const data = await response.json();
-            setQueues(data.queues || []); // Imposta la lista delle code ricevute
-          }
-        } catch (error) {
-          console.error("Errore nel recupero delle code:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
+        const queuesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me/queues`, { headers });
+        const queuesData = await queuesRes.json();
+        if (!queuesRes.ok) throw new Error(queuesData.error || "Errore nel recupero code");
 
-      fetchQueues();
-    } catch (e) {
-      // Rimuove il token se non è valido e torna al login
-      localStorage.removeItem("token");
-      router.push("/login");
-    }
+        setUser(userData.payload); //
+        setQueues(Array.isArray(queuesData.payload) ? queuesData.payload : []);
+      } catch (error: any) {
+        // Visualizza l'errore del backend prima di resettare la sessione
+        console.error(error.message);
+        localStorage.removeItem("token");
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [router]);
 
   const handleLogout = () => {
-    // Elimina il token e resetta lo stato
+    // Elimina la sessione locale e torna alla pagina principale
     localStorage.removeItem("token");
     router.push("/");
   };
@@ -65,7 +64,9 @@ export default function AccountPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-200 flex items-center justify-center">
-        <p className="text-indigo-600 font-bold animate-pulse">CARICAMENTO...</p>
+        <p className="text-indigo-600 font-bold animate-pulse uppercase tracking-widest">
+          Caricamento...
+        </p>
       </div>
     );
   }
@@ -73,15 +74,17 @@ export default function AccountPage() {
   return (
     <main className="min-h-screen bg-slate-200 p-8 flex flex-col items-center">
       <div className="max-w-4xl w-full">
-        {/* Header Profilo */}
+        {/* Header Profilo: mostra l'iniziale del nome e l'ID univoco del database */}
         <div className="bg-white rounded-3xl p-8 shadow-xl mb-8 flex flex-col md:flex-row justify-between items-center border-b-4 border-indigo-500">
           <div className="flex items-center gap-6 mb-4 md:mb-0">
+            {/* Genera un avatar testuale basato sulla prima lettera dello username */}
             <div className="size-20 bg-indigo-100 rounded-full flex items-center justify-center text-3xl text-indigo-600 font-black">
-              {user?.username[0].toUpperCase()}
+              {user?.username?.[0].toUpperCase() || "?"}
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-700">{user?.username}</h1>
-              <p className="text-slate-400 font-mono text-sm">ID: {user?.id}</p>
+              {/* Visualizza l'ID tecnico dell'utente recuperato dal backend */}
+              <p className="text-slate-400 font-mono text-sm">ID: {user?._id}</p>
             </div>
           </div>
           <button
@@ -92,7 +95,7 @@ export default function AccountPage() {
           </button>
         </div>
 
-        {/* Lista Code Personali */}
+        {/* Sezione di gestione delle code personali */}
         <div className="bg-white rounded-3xl p-8 shadow-xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-xl font-black text-slate-700 uppercase tracking-tight">
@@ -107,7 +110,7 @@ export default function AccountPage() {
 
           <div className="grid gap-4">
             {queues.length > 0 ? (
-              queues.map((q: any) => (
+              queues.map((q) => (
                 <div
                   key={q._id}
                   className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-all group"

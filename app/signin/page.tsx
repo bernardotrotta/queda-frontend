@@ -23,38 +23,33 @@ export default function SignIn() {
     e.preventDefault();
     setError("");
 
-    const { username, email, password, confirmPassword } = formData;
-    if (!username || !email || !password || !confirmPassword) {
-      setError("Tutti i campi sono obbligatori.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Le password non coincidono.");
+    // Esegue una validazione preliminare delle password
+    if (formData.password !== formData.confirmPassword) {
+      setError("Le password non coincidono");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Invia i dati all'endpoint corretto definito nel server
+      // Invia i dati di registrazione al server 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URI}/auth/signup`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData), // Invia username, email, password e confirmPassword
+          body: JSON.stringify(formData),
         },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Estrae il messaggio d'errore o i dettagli della validazione
-        throw new Error(data.error || "Errore durante la registrazione");
+        // Cattura errori specifici come "User already exists" o "Missing parameters" 
+        throw new Error(data.error || "Errore durante la creazione dell'account");
       }
 
-      // Reindirizza l'utente alla pagina di login dopo la creazione dell'account
+      // Reindirizza l'utente alla pagina di login in caso di successo
       router.push("/login");
     } catch (err: any) {
       setError(err.message);
@@ -69,7 +64,7 @@ export default function SignIn() {
         onSubmit={handleRegister}
         className="max-w-md w-full bg-white rounded-3xl shadow-xl p-10 border border-slate-100"
       >
-        <h1 className="text-4xl font-black text-center text-indigo-600 mb-10">
+        <h1 className="text-4xl font-black text-center text-indigo-600 mb-10 uppercase tracking-tighter">
           Sign Up
         </h1>
 
@@ -81,7 +76,7 @@ export default function SignIn() {
 
         <div className="space-y-4">
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
               Username
             </label>
             <input
@@ -95,7 +90,7 @@ export default function SignIn() {
           </div>
 
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
               Email
             </label>
             <input
@@ -109,7 +104,7 @@ export default function SignIn() {
           </div>
 
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
               Password
             </label>
             <input
@@ -123,7 +118,7 @@ export default function SignIn() {
           </div>
 
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide">
+            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
               Confirm Password
             </label>
             <input

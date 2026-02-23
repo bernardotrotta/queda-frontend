@@ -1,31 +1,36 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { QueueItem } from "@/types/queue";
 
 interface TicketProps {
-    numero: number;
+    // Riceve l'oggetto completo dal backend per accedere a ticket e status 
+    item: QueueItem;
+    // Indica se il ticket appartiene all'utente attualmente loggato
     isUser: boolean;
+    // Definisce la durata stimata per il calcolo del countdown
     tempoInizialeMinuti: number;
 }
 
-export default function TicketCoda({ numero, isUser, tempoInizialeMinuti }: TicketProps) {
+export default function TicketCoda({ item, isUser, tempoInizialeMinuti }: TicketProps) {
     // Converte il tempo in secondi per una gestione precisa del countdown
     const tempoTotaleSecondi = tempoInizialeMinuti * 60;
     const [secondiRimanenti, setSecondiRimanenti] = useState(tempoTotaleSecondi);
 
     useEffect(() => {
-        // Avvia il timer solo se il ticket appartiene all'utente loggato
+        // Avvia il timer solo se il ticket appartiene all'utente e non è ancora scaduto
         if (!isUser || secondiRimanenti <= 0) return;
 
         const timer = setInterval(() => {
+            // Decrementa il valore dei secondi ogni millisecondo
             setSecondiRimanenti((prev) => prev - 1);
         }, 1000);
 
-        // Pulisce l'intervallo per evitare memory leak
+        // Pulisce l'intervallo per evitare memory leak alla distruzione del componente
         return () => clearInterval(timer);
     }, [isUser, secondiRimanenti]);
 
-    // Calcola la percentuale di completamento per la barra di sfondo
+    // Calcola la percentuale di completamento per la barra di progresso
     const percentuale = (secondiRimanenti / tempoTotaleSecondi) * 100;
 
     // Trasforma i secondi nel formato leggibile MM:SS
@@ -41,7 +46,7 @@ export default function TicketCoda({ numero, isUser, tempoInizialeMinuti }: Tick
             w-full h-full rounded-full transition-all duration-500 overflow-hidden
             ${isUser ? 'bg-white border-2 border-indigo-500 shadow-lg' : 'bg-slate-50 opacity-60'}
         `}>
-            {/* Barra di progresso */}
+            {/* Barra di progresso: visualizza l'avanzamento temporale solo per l'utente */}
             {isUser && (
                 <div className="absolute inset-0 w-full h-full pointer-events-none">
                     <div
@@ -51,12 +56,12 @@ export default function TicketCoda({ numero, isUser, tempoInizialeMinuti }: Tick
                 </div>
             )}
 
-            {/* Numero del Ticket */}
+            {/* Numero del Ticket: utilizza la proprietà mappata nel database  */}
             <span className="relative z-10 text-3xl font-black text-slate-800">
-                #{numero}
+                #{item.ticket}
             </span>
 
-            {/* Timer: lo mostra solo per l'utente attivo */}
+            {/* Timer: mostra il countdown solo se il ticket è quello dell'utente */}
             {isUser && (
                 <div className="relative z-10 flex items-center gap-2">
                     <div className="size-2 bg-indigo-500 rounded-full animate-pulse" />
