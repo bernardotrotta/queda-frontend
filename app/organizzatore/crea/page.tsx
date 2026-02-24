@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function CreaCoda() {
   const [nomeCoda, setNomeCoda] = useState("");
+  const [tempoStimatoMinuti, setTempoStimatoMinuti] = useState(10); // Valore predefinito in minuti
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -16,36 +17,34 @@ export default function CreaCoda() {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      // Reindirizza al login se manca l'autorizzazione necessaria
       router.push("/login");
       return;
     }
 
     try {
-      // Invia la richiesta di creazione al backend
+      // Converte i minuti inseriti dall'utente in millisecondi per il backend
+      const servingTimeEstimationMs = tempoStimatoMinuti * 60 * 1000;
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // Fornisce il token nel formato atteso
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          // Trasmette il nome della sessione richiesto dal servizio
-          name: nomeCoda 
+          name: nomeCoda,
+          servingTimeEstimationMs: servingTimeEstimationMs // Invia il campo richiesto dal controller
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Estrae l'errore specifico dal middleware del collega
         throw new Error(data.error || "Impossibile creare la coda");
       }
 
-      // Reindirizza l'organizzatore alla pagina account per visualizzare la nuova lista
       router.push("/account");
     } catch (err: any) {
-      // Visualizza il messaggio d'errore dinamico o il fallback
       setError(err.message);
     } finally {
       setLoading(false);
@@ -83,11 +82,18 @@ export default function CreaCoda() {
             />
           </div>
 
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-            <p className="text-xs text-slate-500 font-bold uppercase mb-1">Info Servizio</p>
-            <p className="text-[11px] text-slate-400 leading-relaxed italic">
-              La coda sarà attivata immediatamente. Al momento il sistema non richiede la durata media dei turni.
-            </p>
+          <div>
+            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
+              Durata media turno (Minuti)
+            </label>
+            <input
+              required
+              type="number"
+              min="1"
+              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none text-slate-700 transition-all font-mono"
+              value={tempoStimatoMinuti}
+              onChange={(e) => setTempoStimatoMinuti(parseInt(e.target.value))}
+            />
           </div>
 
           <button

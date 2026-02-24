@@ -1,23 +1,36 @@
-// Definisce la struttura di un singolo ticket presente nel database 
+// Rappresenta un singolo ticket all'interno di una coda
 export interface QueueItem {
     _id: string;
-    queueId: string; // Riferimento all'ID della coda di appartenenza 
-    ticket: number; // Numero progressivo assegnato all'utente 
+    queueId: string;
+    ticket: number;
+    // Il payload contiene dati extra come l'ID o lo username dell'utente
     payload: {
-        username?: string; // Può contenere il nome utente o altri dati extra 
+        userId?: string;
+        username?: string;
         [key: string]: any;
     };
-    status: 'waiting' | 'serving' | 'served'; // Stato attuale del ticket nella coda 
+    // Lo stato segue l'enum definito nel backend: waiting, serving o served
+    status: 'waiting' | 'serving' | 'served';
+    
+    // CAMPI TEMPORALI (Aggiunti per risolvere l'errore)
+    // Indica la stima del servizio in millisecondi
+    servingTimeEstimation: number; 
+    startedServingAt?: string;
+    // Nota: manteniamo il nome con il typo 'serevedAt' per coerenza con il modello backend
+    serevedAt?: string; 
+    
     createdAt: string;
     updatedAt: string;
 }
 
-// Rappresenta i dati della coda gestita dall'organizzatore 
+// Rappresenta la struttura generale di una coda
 export interface Queue {
     _id: string;
-    name: string; // Nome assegnato alla sessione della coda 
-    ownerId: string; // Identificativo dell'utente che ha creato la coda 
-    active: boolean; // Indica se la coda è attualmente aperta o chiusa 
+    name: string;
+    ownerId: string;
+    active: boolean;
+    // Stima base definita alla creazione della coda
+    servingTimeEstimation: number; 
     createdAt: string;
     updatedAt: string;
 }
