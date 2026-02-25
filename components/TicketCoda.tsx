@@ -42,7 +42,7 @@ export default function TicketCoda({ item, isUser }: TicketProps) {
             {isUser && item.status === 'serving' && (
                 <div className="absolute inset-0 w-full h-full pointer-events-none">
                     <div
-                        className="h-full bg-indigo-50 transition-all duration-1000 ease-linear"
+                        className="h-full bg-indigo-100 transition-all duration-1000 ease-linear"
                         style={{ width: `${percentuale}%` }}
                     />
                 </div>
