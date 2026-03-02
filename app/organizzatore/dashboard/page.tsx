@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { QueueItem } from "@/types/queue";
+import { io } from "socket.io-client";
 
 export default function DashboardOrganizzatore() {
     const searchParams = useSearchParams();
@@ -13,48 +14,63 @@ export default function DashboardOrganizzatore() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Recupera i dati della coda e i relativi ticket dal backend
-    const fetchCoda = async () => {
+    // Recupera lo stato aggiornato della coda e dei ticket
+    const fetchCoda = useCallback(async () => {
         try {
-            // Interroga l'endpoint degli items definito nel router del backend
+            // Esegue la richiesta all'endpoint della coda
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`);
             const data = await response.json();
 
             if (!response.ok) {
-                // Sfrutta il messaggio di errore dinamico inviato dal middleware
+                // Estrae il messaggio di errore centralizzato
                 throw new Error(data.error || "Impossibile caricare i dati della coda");
             }
 
-            // Estrae la lista dal payload della SuccessMessage
-            setItems(data.payload || []);
+            // Accede al payload annidato causato dal doppio SuccessMessage nel controller
+            const itemsList = data.payload?.payload?.items || [];
+            setItems(itemsList);
         } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    };
+    }, [idCoda]);
 
     useEffect(() => {
         if (!idCoda) {
             router.push("/account");
             return;
         }
+
         fetchCoda();
-        // Imposta l'aggiornamento automatico ogni 5 secondi
-        const interval = setInterval(fetchCoda, 5000);
-        return () => clearInterval(interval);
-    }, [idCoda]);
+
+        // Stabilisce la connessione WebSocket
+        const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
+        
+        socket.on("message", () => {
+            // Riesegue il fetch alla ricezione di un segnale broadcast
+            fetchCoda();
+        });
+
+        // Mantiene il polling di sicurezza ogni 10 secondi per evitare desincronizzazioni
+        const interval = setInterval(fetchCoda, 10000);
+
+        return () => {
+            clearInterval(interval);
+            socket.disconnect();
+        };
+    }, [idCoda, fetchCoda]);
 
     const handleProssimoUtente = async () => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
         try {
-            // Esegue l'avanzamento della coda tramite PATCH
+            // Chiama l'endpoint dequeue per avanzare la coda
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, {
                 method: "PATCH",
                 headers: {
-                    "Authorization": `Bearer ${token}`, // Header richiesto dal middleware auth
+                    "Authorization": `Bearer ${token}`, // Invia il token per il middleware auth
                     "Content-Type": "application/json"
                 }
             });
@@ -62,6 +78,7 @@ export default function DashboardOrganizzatore() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || "Errore durante l'avanzamento");
 
+            // Aggiorna la vista dopo la transazione riuscita nel backend
             await fetchCoda();
         } catch (err: any) {
             alert(err.message);
@@ -69,19 +86,14 @@ export default function DashboardOrganizzatore() {
     };
 
     const handleEliminaCoda = async () => {
-        // conferma nativa del browser
-
-        const confirm = window.confirm("Sei sicuro di voler eliminare definitivamente questa coda?")
-        if (!confirm) {
-            return;
-        }
-
+        const confirmDelete = window.confirm("Sei sicuro di voler eliminare definitivamente questa coda?");
+        if (!confirmDelete) return;
 
         const token = localStorage.getItem("token");
         if (!token) return;
 
         try {
-            // Invia la richiesta di rimozione totale al backend
+            // Esegue l'eliminazione atomica di coda e ticket
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, {
                 method: "DELETE",
                 headers: {
@@ -93,17 +105,18 @@ export default function DashboardOrganizzatore() {
             const data = await response.json();
 
             if (!response.ok) {
-                // Gestisce errori come "You must be the owner"
+                // Gestisce il rifiuto se l'utente non è l'owner
                 throw new Error(data.error || "Errore durante l'eliminazione");
             }
 
-            alert("Coda eliminata con successo.");
+            // Torna alla gestione account dopo la rimozione dal database
             router.push("/account");
         } catch (err: any) {
             alert(err.message);
         }
     };
 
+    // Filtra gli utenti in base agli stati definiti nello schema
     const utentiInAttesa = items.filter(item => item.status === 'waiting');
     const utenteInServizio = items.find(item => item.status === 'serving');
 
@@ -115,7 +128,6 @@ export default function DashboardOrganizzatore() {
 
     return (
         <main className="min-h-screen bg-slate-100 p-8 flex flex-col items-center">
-            {/* Header con Codice Sessione */}
             <div className="w-full max-w-4xl bg-white rounded-3xl p-8 shadow-lg mb-8 flex justify-between items-center border-b-4 border-indigo-500">
                 <div>
                     <h1 className="text-sm font-black text-slate-500 uppercase tracking-widest">Codice Coda</h1>
@@ -148,7 +160,6 @@ export default function DashboardOrganizzatore() {
                         CHIAMA PROSSIMO
                     </button>
 
-                    {/* Pulsante collegato alla funzione di eliminazione */}
                     <button
                         onClick={handleEliminaCoda}
                         className="w-full bg-white text-red-500 border-2 border-red-100 font-bold py-4 rounded-2xl hover:bg-red-50 transition-all uppercase text-sm"
@@ -172,7 +183,6 @@ export default function DashboardOrganizzatore() {
                                 <div key={u._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                     <div className="flex flex-col">
                                         <span className="font-black text-indigo-600 text-lg">#{u.ticket}</span>
-                                        {/* Estrae il nome utente salvato nel payload durante l'operazione di enqueue */}
                                         <span className="font-bold text-slate-600 lowercase opacity-80">
                                             @{u.payload?.username || "anonimo"}
                                         </span>

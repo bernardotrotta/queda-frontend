@@ -17,27 +17,27 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Invia le credenziali all'endpoint di autenticazione 
+      // Invia le credenziali all'endpoint di autenticazione definito nel router
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URI}/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
-        },
+        }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Estrae il messaggio d'errore specifico (es. "Invalid credentials") dal backend 
+        // Estrae il messaggio d'errore centralizzato fornito dal middleware di gestione errori
         throw new Error(data.error || "Impossibile completare l'accesso");
       }  
       
-      // Memorizza il token JWT ricevuto nel payload della risposta [cite: 5, 12]
-      localStorage.setItem("token", data.payload);
+      // Memorizza il token contenuto nel payload della risposta di successo
+      localStorage.setItem("token", data.payload.token);
 
-      // Reindirizza l'utente alla home page
+      // Reindirizza all'applicazione principale dopo aver stabilito la sessione
       router.push("/");
     } catch (err: any) {
       setError(err.message);
@@ -90,7 +90,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
+            className="w-full mt-4 bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
           >
             {loading ? "Accesso in corso..." : "Accedi"}
           </button>

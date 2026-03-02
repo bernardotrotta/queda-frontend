@@ -6,26 +6,32 @@ import { QueueItem } from "@/types/queue";
 interface TicketProps {
     item: QueueItem;
     isUser: boolean;
+    tempoAttesaTotaleMs: number; // Valore in millisecondi ricevuto dal backend tramite il genitore
 }
 
-export default function TicketCoda({ item, isUser }: TicketProps) {
-    // Estrae la stima temporale definita nel modello del backend
-    const tempoTotaleSecondi = Math.floor(item.servingTimeEstimation / 1000);
-    const [secondiRimanenti, setSecondiRimanenti] = useState(tempoTotaleSecondi);
+export default function TicketCoda({ item, isUser, tempoAttesaTotaleMs }: TicketProps) {
+    // Gestisce il countdown locale per l'arrivo del proprio turno
+    const [secondiRimanenti, setSecondiRimanenti] = useState(Math.floor(tempoAttesaTotaleMs / 1000));
+
+    // Sincronizza il countdown locale ogni volta che il server invia una nuova stima
+    useEffect(() => {
+        // Aggiorna lo stato interno con il nuovo valore di attesa stimata
+        setSecondiRimanenti(Math.floor(tempoAttesaTotaleMs / 1000));
+    }, [tempoAttesaTotaleMs]);
 
     useEffect(() => {
-        // Avvia il countdown solo per il ticket attualmente in servizio
-        if (item.status !== 'serving' || secondiRimanenti <= 0) return;
+        // Interrompe il timer se l'utente è già servito o se il tempo è esaurito
+        if (item.status === 'served' || item.status === 'quit' || secondiRimanenti <= 0) return;
 
+        // Decrementa il contatore ogni secondo per fluidità visiva
         const timer = setInterval(() => {
-            setSecondiRimanenti((prev) => prev - 1);
+            setSecondiRimanenti((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
 
         return () => clearInterval(timer);
     }, [item.status, secondiRimanenti]);
 
-    const percentuale = (secondiRimanenti / tempoTotaleSecondi) * 100;
-
+    // Formatta la durata rimanente in minuti e secondi
     const formattaTempo = (secondi: number) => {
         const m = Math.floor(Math.max(0, secondi) / 60);
         const s = Math.max(0, secondi) % 60;
@@ -38,30 +44,29 @@ export default function TicketCoda({ item, isUser }: TicketProps) {
             w-full h-20 rounded-full transition-all duration-500 overflow-hidden
             ${isUser ? 'bg-white border-2 border-indigo-500 shadow-lg' : 'bg-slate-50 border border-slate-200'}
         `}>
-            {/* Sfondo di caricamento visibile solo per il ticket utente in servizio */}
-            {isUser && item.status === 'serving' && (
-                <div className="absolute inset-0 w-full h-full pointer-events-none">
-                    <div
-                        className="h-full bg-indigo-100 transition-all duration-1000 ease-linear"
-                        style={{ width: `${percentuale}%` }}
-                    />
-                </div>
-            )}
-
-            <span className="relative z-10 text-3xl font-black text-slate-800">
+            {/* Mostra il numero del ticket assegnato dal contatore atomico del database */}
+            <span className="relative z-10 text-3xl font-black text-slate-800 tracking-tighter">
                 #{item.ticket}
             </span>
 
-            {/* Mostra la stima del tempo e il countdown SOLO se l'item appartiene all'utente */}
+            {/* Visualizza i dettagli temporali solo se il ticket appartiene all'utente loggato */}
             {isUser && (
-                <div className="relative z-10 flex flex-col items-end">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">
-                        {item.status === 'serving' ? 'Tuo Turno' : 'Attesa stimata'}
+                <div className="relative z-10 flex flex-col items-end animate-in fade-in duration-300">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase leading-none tracking-widest">
+                        {item.status === 'serving' ? 'Tuo Turno' : 'Arrivo Stimato'}
                     </span>
                     <span className="text-xl font-mono font-bold text-indigo-600">
-                        {formattaTempo(secondiRimanenti)}
+                        {/* Gestisce lo stato 'serving' come priorità visiva */}
+                        {item.status === 'serving' ? "ORA" : formattaTempo(secondiRimanenti)}
                     </span>
                 </div>
+            )}
+
+            {/* Indicatore visivo opzionale per i ticket in attesa degli altri utenti */}
+            {!isUser && item.status === 'serving' && (
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
+                    In Servizio
+                </span>
             )}
         </div>
     );

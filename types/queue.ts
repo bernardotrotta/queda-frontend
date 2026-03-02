@@ -2,23 +2,18 @@
 export interface QueueItem {
     _id: string;
     queueId: string;
+    userId: string;
     ticket: number;
-    // Il payload contiene dati extra come l'ID o lo username dell'utente
     payload: {
         userId?: string;
         username?: string;
         [key: string]: any;
     };
-    // Lo stato segue l'enum definito nel backend: waiting, serving o served
-    status: 'waiting' | 'serving' | 'served';
+    status: 'waiting' | 'serving' | 'served' | 'quit';
     
-    // CAMPI TEMPORALI (Aggiunti per risolvere l'errore)
-    // Indica la stima del servizio in millisecondi
     servingTimeEstimation: number; 
     startedServingAt?: string;
-    // Nota: manteniamo il nome con il typo 'serevedAt' per coerenza con il modello backend
-    serevedAt?: string; 
-    
+    servedAt?: string;    
     createdAt: string;
     updatedAt: string;
 }
@@ -29,8 +24,8 @@ export interface Queue {
     name: string;
     ownerId: string;
     active: boolean;
-    // Stima base definita alla creazione della coda
-    servingTimeEstimation: number; 
+    averageServingTime: number;
+    counter: number;
     createdAt: string;
     updatedAt: string;
 }

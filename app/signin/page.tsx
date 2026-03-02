@@ -16,6 +16,7 @@ export default function SignIn() {
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Aggiorna lo stato del modulo ad ogni inserimento
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -23,7 +24,7 @@ export default function SignIn() {
     e.preventDefault();
     setError("");
 
-    // Esegue una validazione preliminare delle password
+    // Esegue una validazione preliminare della corrispondenza delle password
     if (formData.password !== formData.confirmPassword) {
       setError("Le password non coincidono");
       return;
@@ -32,24 +33,24 @@ export default function SignIn() {
     setLoading(true);
 
     try {
-      // Invia i dati di registrazione al server 
+      // Invia i dati al servizio di registrazione del backend
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URI}/auth/signup`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-        },
+        }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Cattura errori specifici come "User already exists" o "Missing parameters" 
+        // Estrae il messaggio di errore specifico (es: "User already exists")
         throw new Error(data.error || "Errore durante la creazione dell'account");
       }
 
-      // Reindirizza l'utente alla pagina di login in caso di successo
+      // Reindirizza alla pagina di accesso dopo la registrazione avvenuta con successo
       router.push("/login");
     } catch (err: any) {
       setError(err.message);

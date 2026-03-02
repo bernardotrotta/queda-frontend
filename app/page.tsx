@@ -14,7 +14,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Recupera il token per verificare lo stato di autenticazione
+    // Verifica la presenza di una sessione attiva al caricamento
     const token = localStorage.getItem("token");
     if (token) {
       try {
@@ -22,6 +22,7 @@ export default function Home() {
         setIsLoggedIn(true);
         setUser({ username: decoded.username, id: decoded.id });
       } catch (e) {
+        // Rimuove il token se risulta corrotto o scaduto
         localStorage.removeItem("token");
       }
     }
@@ -31,46 +32,51 @@ export default function Home() {
     setLoading(true);
     setErroreCoda("");
 
-    if (!isLoggedIn) {
+    const token = localStorage.getItem("token");
+    if (!token || !isLoggedIn) {
       setErroreCoda("Effettua il login per partecipare alla coda.");
       setLoading(false);
       return;
     }
 
     try {
-      // Recupera la lista dei ticket attuali per calcolare il prossimo numero e ottenere la stima temporale
-      const resItems = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
-      const dataItems = await resItems.json();
+      // Recupera la lista dei ticket per verificare se l'utente è già presente
+      const resCheck = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
+      const dataCheck = await resCheck.json();
 
-      if (!resItems.ok) throw new Error(dataItems.error || "Codice coda non valido.");
+      if (!resCheck.ok) throw new Error(dataCheck.error || "Codice coda non trovato.");
 
-      const listaTicket = dataItems.payload || [];
-      // Determina il numero del ticket incrementando l'ultimo valore trovato
-      const prossimoTicket = listaTicket.length > 0 
-        ? Math.max(...listaTicket.map((i: any) => i.ticket)) + 1 
-        : 1;
+      // Accede al payload annidato a causa del doppio wrapping nel controller
+      const listaTicket = dataCheck.payload?.payload?.items || [];
+      
+      // Cerca un ticket attivo associato all'ID dell'utente loggato
+      const ticketEsistente = listaTicket.find((item: any) => 
+        item.userId === user?.id && item.status !== 'served'
+      );
 
-      // Recupera la stima temporale predefinita della coda per soddisfare il requisito del database
-      const resQueues = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues`);
-      const dataQueues = await resQueues.json();
-      const infoCoda = dataQueues.payload?.find((q: any) => q._id === codiceCoda);
-      const stimaTempo = infoCoda?.servingTimeEstimation || 600000; // Default 10 min
+      // Reindirizza direttamente se l'utente possiede già un ticket valido
+      if (ticketEsistente) {
+        router.push(`/utente?coda=${codiceCoda}`);
+        return;
+      }
 
-      // Crea fisicamente il ticket nel database tramite endpoint POST
-      const resEnqueue = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`, {
+      // Invia la richiesta di accodamento delegando al server la gestione del ticket
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // Invia il token per l'estrazione dell'ID utente nel middleware
+        },
         body: JSON.stringify({
-          ticket: prossimoTicket,
-          payload: { userId: user?.id, username: user?.username }, // Inserisce i metadati nel payload Mixed
-          servingTimeEstimationMs: stimaTempo
+          // Inserisce lo username nel payload Mixed del modello Item
+          payload: { username: user?.username }
         })
       });
 
-      const dataEnqueue = await resEnqueue.json();
-      if (!resEnqueue.ok) throw new Error(dataEnqueue.error || "Errore durante l'iscrizione.");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Errore durante l'iscrizione alla coda.");
 
-      // Reindirizza alla visualizzazione utente solo dopo la conferma del backend
+      // Naviga alla pagina utente una volta confermata l'operazione atomica
       router.push(`/utente?coda=${codiceCoda}`);
     } catch (err: any) {
       setErroreCoda(err.message);
@@ -116,7 +122,7 @@ export default function Home() {
             <button
               onClick={partecipaAllaCoda}
               disabled={!codiceCoda || loading}
-              className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50"
+              className="w-full mt-4 bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50"
             >
               {loading ? "Entrando..." : "Partecipa come Utente"}
             </button>

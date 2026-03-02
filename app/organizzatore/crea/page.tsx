@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function CreaCoda() {
   const [nomeCoda, setNomeCoda] = useState("");
-  const [tempoStimatoMinuti, setTempoStimatoMinuti] = useState(10); // Valore predefinito in minuti
+  const [tempoStimatoMinuti, setTempoStimatoMinuti] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -17,32 +17,35 @@ export default function CreaCoda() {
 
     const token = localStorage.getItem("token");
     if (!token) {
+      // Reindirizza al login se il token di sessione è assente
       router.push("/login");
       return;
     }
 
     try {
-      // Converte i minuti inseriti dall'utente in millisecondi per il backend
-      const servingTimeEstimationMs = tempoStimatoMinuti * 60 * 1000;
+      // Converte i minuti inseriti in millisecondi per il database
+      const averageServingTimeMs = tempoStimatoMinuti * 60 * 1000;
 
+      // Invia la richiesta di creazione della coda al backend
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${token}`, // Fornisce l'identificativo dell'utente tramite il middleware
         },
         body: JSON.stringify({
-          name: nomeCoda,
-          servingTimeEstimationMs: servingTimeEstimationMs // Invia il campo richiesto dal controller
+          name: nomeCoda, // Campo validato dal middleware queueNameChain
+          averageServingTime: averageServingTimeMs // Utilizza la chiave attesa dal controller
         }),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
+        // Gestisce i messaggi di errore standardizzati provenienti dal backend
         throw new Error(data.error || "Impossibile creare la coda");
       }
 
+      // Reindirizza alla gestione account dopo la creazione della risorsa
       router.push("/account");
     } catch (err: any) {
       setError(err.message);
@@ -53,14 +56,9 @@ export default function CreaCoda() {
 
   return (
     <main className="min-h-screen bg-slate-200 flex items-center justify-center p-8">
-      <form
-        onSubmit={handleSalvaCoda}
-        className="max-w-md w-full bg-white rounded-3xl shadow-xl p-10 border border-slate-100"
-      >
-        <h1 className="text-3xl font-black text-indigo-600 mb-8 text-center uppercase tracking-tighter">
-          Configura Coda
-        </h1>
-
+      <form onSubmit={handleSalvaCoda} className="max-w-md w-full bg-white rounded-3xl shadow-xl p-10 border border-slate-100">
+        <h1 className="text-3xl font-black text-indigo-600 mb-8 text-center uppercase tracking-tighter">Configura Coda</h1>
+        
         {error && (
           <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold text-center border border-red-100">
             {error}
@@ -69,37 +67,33 @@ export default function CreaCoda() {
 
         <div className="space-y-6">
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
-              Nome Sessione
-            </label>
-            <input
-              required
-              type="text"
-              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none text-slate-700 transition-all font-mono"
-              placeholder="Es: Ufficio Studenti"
-              value={nomeCoda}
-              onChange={(e) => setNomeCoda(e.target.value)}
+            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Nome Sessione</label>
+            <input 
+              required 
+              type="text" 
+              className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono" 
+              placeholder="Es: Consulenza Tecnica"
+              value={nomeCoda} 
+              onChange={(e) => setNomeCoda(e.target.value)} 
             />
           </div>
-
+          
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
-              Durata media turno (Minuti)
-            </label>
-            <input
-              required
-              type="number"
-              min="1"
-              className="w-full p-4 bg-slate-100 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none text-slate-700 transition-all font-mono"
-              value={tempoStimatoMinuti}
-              onChange={(e) => setTempoStimatoMinuti(parseInt(e.target.value))}
+            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Durata media turno (Minuti)</label>
+            <input 
+              required 
+              type="number" 
+              min="1" 
+              className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono" 
+              value={tempoStimatoMinuti} 
+              onChange={(e) => setTempoStimatoMinuti(parseInt(e.target.value))} 
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all disabled:opacity-50"
           >
             {loading ? "CREAZIONE IN CORSO..." : "SALVA E AVVIA"}
           </button>
