@@ -77,7 +77,7 @@ export default function SignIn() {
 
         <div className="space-y-4">
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
+            <label className="block px-4 text-[12px] font-bold text-slate-400 mb-2 tracking-wide uppercase">
               Username
             </label>
             <input
@@ -91,7 +91,7 @@ export default function SignIn() {
           </div>
 
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
+            <label className="block px-4 text-[12px] font-bold text-slate-400 mb-2 tracking-wide uppercase">
               Email
             </label>
             <input
@@ -105,7 +105,7 @@ export default function SignIn() {
           </div>
 
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
+            <label className="block px-4 text-[12px] font-bold text-slate-400 mb-2 tracking-wide uppercase">
               Password
             </label>
             <input
@@ -119,7 +119,7 @@ export default function SignIn() {
           </div>
 
           <div>
-            <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
+            <label className="block px-4 text-[12px] font-bold text-slate-400 mb-2 tracking-wide uppercase">
               Confirm Password
             </label>
             <input

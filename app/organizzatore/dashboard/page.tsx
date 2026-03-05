@@ -62,28 +62,28 @@ export default function DashboardOrganizzatore() {
     }, [idCoda, fetchCoda]);
 
     const handleProssimoUtente = async () => {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+    const token = localStorage.getItem("token");
+    // Inizializza temporaneamente il socket per inviare il segnale di aggiornamento
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
 
-        try {
-            // Chiama l'endpoint dequeue per avanzare la coda
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, {
-                method: "PATCH",
-                headers: {
-                    "Authorization": `Bearer ${token}`, // Invia il token per il middleware auth
-                    "Content-Type": "application/json"
-                }
-            });
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, {
+            method: "PATCH",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Errore durante l'avanzamento");
+        if (!response.ok) throw new Error("Errore avanzamento coda");
 
-            // Aggiorna la vista dopo la transazione riuscita nel backend
-            await fetchCoda();
-        } catch (err: any) {
-            alert(err.message);
-        }
-    };
+        // Invia un messaggio broadcast per forzare il ricaricamento dei tempi su tutti i client
+        socket.emit('message', 'refresh_data'); 
+        
+        await fetchCoda();
+    } catch (err: any) { 
+        alert(err.message); 
+    } finally {
+        socket.disconnect(); // Chiude la connessione dopo l'invio
+    }
+};
 
     const handleEliminaCoda = async () => {
         const confirmDelete = window.confirm("Sei sicuro di voler eliminare definitivamente questa coda?");

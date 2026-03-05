@@ -63,7 +63,7 @@ export default function Login() {
         )}
 
         <div className="mb-4">
-          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
+          <label className="block px-4 text-[12px] font-bold text-slate-400 mb-2 tracking-wide uppercase">
             Email
           </label>
           <input
@@ -75,7 +75,7 @@ export default function Login() {
             placeholder="esempio@mail.com"
           />
 
-          <label className="block px-4 text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">
+          <label className="block px-4 text-[12px] font-bold text-slate-400 mb-2 tracking-wide uppercase">
             Password
           </label>
           <input

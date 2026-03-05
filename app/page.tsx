@@ -9,7 +9,7 @@ export default function Home() {
   const [codiceCoda, setCodiceCoda] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<{ username: string; id: string } | null>(null);
-  const [erroreCoda, setErroreCoda] = useState("");
+  const [erroreCoda, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -30,32 +30,28 @@ export default function Home() {
 
   const partecipaAllaCoda = async () => {
     setLoading(true);
-    setErroreCoda("");
+    setError("");
 
     const token = localStorage.getItem("token");
     if (!token || !isLoggedIn) {
-      setErroreCoda("Effettua il login per partecipare alla coda.");
+      setError("Effettua il login per partecipare alla coda.");
       setLoading(false);
       return;
     }
 
     try {
-      // Recupera la lista dei ticket per verificare se l'utente è già presente
       const resCheck = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
       const dataCheck = await resCheck.json();
 
-      if (!resCheck.ok) throw new Error(dataCheck.error || "Codice coda non trovato.");
+      // Estrae la lista dal doppio payload del backend
+      const lista = dataCheck.payload?.payload?.items || [];
 
-      // Accede al payload annidato a causa del doppio wrapping nel controller
-      const listaTicket = dataCheck.payload?.payload?.items || [];
-      
-      // Cerca un ticket attivo associato all'ID dell'utente loggato
-      const ticketEsistente = listaTicket.find((item: any) => 
-        item.userId === user?.id && item.status !== 'served'
+      // Considera attivi solo i ticket 'waiting' o 'serving'
+      const ticketAttivo = lista.find((i: any) =>
+        i.userId === user?.id && (i.status === 'waiting' || i.status === 'serving')
       );
 
-      // Reindirizza direttamente se l'utente possiede già un ticket valido
-      if (ticketEsistente) {
+      if (ticketAttivo) {
         router.push(`/utente?coda=${codiceCoda}`);
         return;
       }
@@ -63,7 +59,7 @@ export default function Home() {
       // Invia la richiesta di accodamento delegando al server la gestione del ticket
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}` // Invia il token per l'estrazione dell'ID utente nel middleware
         },
@@ -79,7 +75,7 @@ export default function Home() {
       // Naviga alla pagina utente una volta confermata l'operazione atomica
       router.push(`/utente?coda=${codiceCoda}`);
     } catch (err: any) {
-      setErroreCoda(err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -105,11 +101,11 @@ export default function Home() {
       </header>
 
       <main className="grow flex flex-col items-center py-8 px-8 w-full">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100">
-          <h1 className="text-4xl font-black text-center text-indigo-600 mb-12 uppercase tracking-tighter">QUEDA</h1>
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-12 border border-slate-100 font-sans">
+          <h1 className="text-5xl font-black text-center text-indigo-600 mb-8 uppercase tracking-tighter">QUEDA</h1>
 
           <div className="mb-4">
-            <label className="block px-4 uppercase text-sm font-bold text-slate-700 mb-2 tracking-wide">Codice Sessione</label>
+            <label className="block px-4 uppercase text-[12px] font-bold text-slate-400 mb-2 tracking-wide">Codice Sessione</label>
             <input
               type="text"
               placeholder="Inserisci ID Coda"
