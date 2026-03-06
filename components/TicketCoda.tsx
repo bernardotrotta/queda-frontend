@@ -6,7 +6,7 @@ import { QueueItem } from "@/types/queue";
 interface TicketProps {
     item: QueueItem;
     isUser: boolean;
-    tempoAttesaTotaleMs: number; // Valore in millisecondi ricevuto dal backend tramite il genitore
+    tempoAttesaTotaleMs: number; // Valore in millisecondi ricevuto dal backend 
 }
 
 export default function TicketCoda({ item, isUser, tempoAttesaTotaleMs }: TicketProps) {

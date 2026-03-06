@@ -37,7 +37,7 @@ export default function Login() {
       // Memorizza il token contenuto nel payload della risposta di successo
       localStorage.setItem("token", data.payload.token);
 
-      // Reindirizza all'applicazione principale dopo aver stabilito la sessione
+      // Reindirizza alla pagina principale dopo aver stabilito la sessione
       router.push("/");
     } catch (err: any) {
       setError(err.message);

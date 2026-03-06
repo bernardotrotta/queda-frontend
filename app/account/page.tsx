@@ -17,7 +17,6 @@ export default function AccountPage() {
   const [participations, setParticipations] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Gestisce lo stato della modifica del profilo
   const [editingType, setEditingType] = useState<"none" | "username" | "password">("none");
   const [formData, setFormData] = useState({
     username: "",
@@ -27,86 +26,75 @@ export default function AccountPage() {
 
   const router = useRouter();
 
-  useEffect(() => {
+  const fetchData = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
       return;
     }
 
-    /**
-     * Esegue il recupero simultaneo dei dati del profilo, delle code create e delle partecipazioni.
-     */
-    const fetchData = async () => {
-      try {
-        const headers = {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        };
+    try {
+      const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      };
 
-        // Recupera le informazioni anagrafiche dell'utente
-        const userRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me`, { headers });
-        const userData = await userRes.json();
-        if (!userRes.ok) throw new Error(userData.error || "Errore profilo");
+      const userRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me`, { headers });
+      const userData = await userRes.json();
+      if (!userRes.ok) throw new Error(userData.error || "Errore profilo");
 
-        // Recupera l'elenco delle code gestite come organizzatore
-        const queuesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me/queues`, { headers });
-        const queuesData = await queuesRes.json();
-        if (!queuesRes.ok) throw new Error(queuesData.error || "Errore code create");
+      const queuesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me/queues`, { headers });
+      const queuesData = await queuesRes.json();
+      if (!queuesRes.ok) throw new Error(queuesData.error || "Errore code create");
 
-        // Recupera i ticket attivi in cui l'utente figura come partecipante
-        const itemsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me/queues/items`, { headers });
-        const itemsData = await itemsRes.json();
+      const itemsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me/queues/items`, { headers });
+      const itemsData = await itemsRes.json();
 
-        if (itemsRes.ok) {
-          // Filtra escludendo esplicitamente sia 'served' che 'quit'
-          const activeTickets = (itemsData.payload.items || []).filter(
-            (item: QueueItem) => item.status === 'waiting' || item.status === 'serving'
-          );
-          setParticipations(activeTickets);
-        }
-        
-        // Estrae i dati dai payload strutturati secondo SuccessMessage
-        setUser(userData.payload.user);
-        setQueues(queuesData.payload.queues || []);
-
-        // Filtra solo i ticket non ancora conclusi
-        const ticketAttivi = (itemsData.payload.items || []).filter(
-          (item: QueueItem) => item.status !== 'served' && item.status !== 'quit'
+      if (itemsRes.ok) {
+        // Filtra escludendo esplicitamente sia 'served' che 'quit' per mostrare solo i ticket attivi
+        const activeTickets = (itemsData.payload.items || []).filter(
+          (item: QueueItem) => item.status === 'waiting' || item.status === 'serving'
         );
-        setParticipations(ticketAttivi);
-
-      } catch (error: any) {
-        console.error("Errore recupero dati:", error.message);
-        localStorage.removeItem("token");
-        router.push("/login");
-      } finally {
-        setLoading(false);
+        setParticipations(activeTickets);
       }
-    };
+      
+      setUser(userData.payload.user);
+      setQueues(queuesData.payload.queues || []);
 
+    } catch (error: any) {
+      console.error("Errore recupero dati:", error.message);
+      localStorage.removeItem("token");
+      router.push("/login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [router]);
 
-  /**
-   * Gestisce l'aggiornamento parziale delle informazioni utente (username o password).
-   */
   const handleUpdateInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
 
     try {
-      // Invia la richiesta PATCH al backend specificando il tipo di modifica
+      // Invia tutti i parametri necessari per soddisfare i validatori del backend
+      // Se si modifica solo lo username, invia password fittizie che verranno ignorate dal controller grazie al campo 'type'
+      const payload = {
+        username: editingType === "username" ? formData.username : (user?.username || ""),
+        password: editingType === "password" ? formData.password : "123",
+        confirmPassword: editingType === "password" ? formData.confirmPassword : "123",
+        type: editingType
+      };
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me`, {
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          ...formData,
-          type: editingType // 'username' o 'password'
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -116,25 +104,23 @@ export default function AccountPage() {
       setEditingType("none");
       setFormData({ username: "", password: "", confirmPassword: "" });
 
-      // Ricarica la sessione se è stato modificato il nome visualizzato
-      if (editingType === "username") window.location.reload();
+      // Ricarica i dati per aggiornare l'interfaccia utente
+      if (editingType === "username") {
+          window.location.reload();
+      } else {
+          fetchData();
+      }
 
     } catch (error: any) {
       alert(error.message);
     }
   };
 
-  /**
-   * Esegue la rimozione del token e reindirizza alla schermata iniziale.
-   */
   const handleLogout = () => {
     localStorage.removeItem("token");
     router.push("/");
   };
 
-  /**
-   * Gestisce la cancellazione definitiva dell'account e di tutti i dati associati.
-   */
   const handleDeleteAccount = async () => {
     const confirmDelete = window.confirm(
       "ATTENZIONE: Questa azione eliminerà permanentemente il tuo profilo e tutte le tue code. Procedere?"
@@ -143,7 +129,6 @@ export default function AccountPage() {
 
     const token = localStorage.getItem("token");
     try {
-      // Richiede l'eliminazione atomica dell'account
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
@@ -165,7 +150,6 @@ export default function AccountPage() {
   return (
     <main className="min-h-screen bg-slate-200 p-8 flex flex-col items-center">
       <div className="max-w-4xl w-full space-y-8">
-        {/* Sezione Profilo */}
         <div className="bg-white rounded-3xl p-8 shadow-xl border-b-4 border-indigo-500">
           <div className="flex flex-col md:flex-row justify-between items-center mb-6">
             <div className="flex items-center gap-6 mb-4 md:mb-0">
@@ -228,7 +212,6 @@ export default function AccountPage() {
           )}
         </div>
 
-        {/* Sezione Partecipazioni Attive */}
         <div className="bg-white rounded-3xl p-8 shadow-xl">
           <h2 className="text-xl font-black text-slate-700 uppercase tracking-tight mb-8">Partecipazioni Attive</h2>
           <div className="grid gap-4">
@@ -253,7 +236,6 @@ export default function AccountPage() {
           </div>
         </div>
 
-        {/* Sezione Code Create */}
         <div className="bg-white rounded-3xl p-8 shadow-xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-xl font-black text-slate-700 uppercase tracking-tight">Le Tue Code (Admin)</h2>
@@ -267,7 +249,7 @@ export default function AccountPage() {
                 <div key={q._id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-all group">
                   <div>
                     <h3 className="font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">{q.name}</h3>
-                    <p className="text-xs text-slate-400 font-mono uppercase mt-1">Codice: {q._id.slice(-6).toUpperCase()}</p>
+                    <p className="text-xs text-slate-400 font-mono uppercase mt-1">Codice: {q._id.toUpperCase()}</p>
                   </div>
                   <Link href={`/organizzatore/dashboard?coda=${q._id}`}>
                     <button className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all uppercase">Dashboard</button>

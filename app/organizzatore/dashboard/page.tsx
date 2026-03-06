@@ -26,7 +26,7 @@ export default function DashboardOrganizzatore() {
                 throw new Error(data.error || "Impossibile caricare i dati della coda");
             }
 
-            // Accede al payload annidato causato dal doppio SuccessMessage nel controller
+            // Accede al payload annidato nel controller
             const itemsList = data.payload?.payload?.items || [];
             setItems(itemsList);
         } catch (err: any) {
@@ -105,7 +105,7 @@ export default function DashboardOrganizzatore() {
             const data = await response.json();
 
             if (!response.ok) {
-                // Gestisce il rifiuto se l'utente non è l'owner
+                // Gestisce il rifiuto se l'utente non è l'owner (per sicurezza)
                 throw new Error(data.error || "Errore durante l'eliminazione");
             }
 

@@ -23,7 +23,7 @@ export default function PaginaUtente() {
   const [loading, setLoading] = useState(true);
 
   /**
-   * L'applicazione aggiorna i dati della coda e calcola il tempo di attesa specifico.
+   * Aggiorna i dati della coda e calcola il tempo di attesa specifico.
    */
   const fetchDatiTicket = useCallback(async (userId?: string) => {
     try {
@@ -32,36 +32,36 @@ export default function PaginaUtente() {
       const data = await response.json();
 
       if (response.ok) {
-        // L'applicazione accede alla lista tramite il doppio payload del controller
+        // Accede alla lista tramite il doppio payload del controller
         const listaTicket: QueueItem[] = data.payload?.payload?.items || [];
         
-        // Il sistema filtra i ticket attivi e li ordina in modo crescente
+        // Filtra i ticket attivi e li ordina in modo crescente
         const ticketAttivi = listaTicket
           .filter(i => i.status !== 'served' && i.status !== 'quit')
           .sort((a, b) => a.ticket - b.ticket);
           
         setItems(ticketAttivi);
 
-        // L'applicazione individua il numero attualmente in fase di servizio
+        // Individua il numero attualmente in fase di servizio
         const inServizio = listaTicket.find(item => item.status === 'serving');
         setNumeroCorrente(inServizio ? inServizio.ticket : (ticketAttivi[0]?.ticket || 0));
 
-        // Il sistema identifica il ticket dell'utente loggato e ne recupera la stima temporale
+        // Identifica il ticket dell'utente loggato e ne recupera la stima temporale
         if (userId) {
           const trovato = listaTicket.find((item: QueueItem) => item.userId === userId && item.status !== 'quit');
           if (trovato) {
             setMioItem(trovato);
             
-            // L'applicazione richiede il tempo stimato basato sulla media e sul tempo trascorso
+            // Richiede il tempo stimato basato sulla media e sul tempo trascorso
             const resWait = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/items/${trovato._id}/waitingTime`);
             const dataWait = await resWait.json();
             
             if (resWait.ok) {
-              // Il sistema memorizza il tempo (in ms) per il countdown locale
+              // Memorizza il tempo (in ms) per il countdown locale
               setTempoAttesa(dataWait.payload?.['estimated time'] || 0);
             }
           } else {
-            // Se l'utente non ha più un ticket attivo (es. è in 'quit'), lo riporta alla home
+            // Se l'utente non ha più un ticket attivo, lo riporta alla home
             setMioItem(null);
           }
         }
@@ -80,7 +80,7 @@ export default function PaginaUtente() {
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        // L'applicazione estrae l'identità dell'utente dal JWT
+        // Estrae l'identità dell'utente dal JWT
         setUser({ username: decoded.username, id: decoded.id });
         currentUserId = decoded.id;
       } catch (e) {
@@ -89,14 +89,14 @@ export default function PaginaUtente() {
     }
 
     /**
-     * Il sistema recupera i dettagli della coda per visualizzare il nome corretto.
+     * Recupera i dettagli della coda per visualizzare il nome corretto.
      */
     const fetchInformazioniCoda = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}`);
         const data = await response.json();
         if (response.ok) {
-          // L'applicazione estrae il nome dal payload dell'oggetto coda
+          // Estrae il nome dal payload dell'oggetto coda
           setNomeCoda(data.payload?.queue?.name || "Coda");
         }
       } catch (error) {
@@ -108,15 +108,15 @@ export default function PaginaUtente() {
       fetchInformazioniCoda();
       fetchDatiTicket(currentUserId);
 
-      // L'applicazione stabilisce una connessione Socket.io per gli aggiornamenti real-time
+      // Stabilisce una connessione Socket.io per gli aggiornamenti real-time
       const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
       
       socket.on("message", () => {
-        // Il sistema riesegue il fetch ogni volta che l'organizzatore avanza la coda
+        // Riesegue il fetch ogni volta che l'organizzatore avanza la coda
         fetchDatiTicket(currentUserId);
       });
 
-      // L'applicazione esegue un polling di sicurezza ogni 10 secondi
+      // Esegue un polling di sicurezza ogni 10 secondi
       const interval = setInterval(() => fetchDatiTicket(currentUserId), 10000);
 
       return () => {
@@ -127,7 +127,7 @@ export default function PaginaUtente() {
   }, [codiceCoda, fetchDatiTicket]);
 
   /**
-   * L'applicazione gestisce l'abbandono anticipato della coda.
+   * Gestisce l'abbandono anticipato della coda.
    */
   const handleAbbandonaCoda = async () => {
     if (!mioItem) return;
@@ -135,7 +135,7 @@ export default function PaginaUtente() {
 
     const token = localStorage.getItem("token");
     try {
-      // Il sistema invia una richiesta DELETE per impostare lo stato del ticket su 'quit'
+      // Invia una richiesta DELETE per impostare lo stato del ticket su 'quit'
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items/${mioItem._id}`, 
         {
@@ -146,7 +146,7 @@ export default function PaginaUtente() {
 
       if (!response.ok) throw new Error("Impossibile abbandonare la coda");
 
-      // L'applicazione reindirizza l'utente alla schermata principale
+      // Reindirizza l'utente alla schermata principale
       router.replace("/");
     } catch (err: any) {
       alert(err.message);
@@ -154,14 +154,14 @@ export default function PaginaUtente() {
   };
 
   /**
-   * Il sistema esegue lo scroll automatico verso il ticket dell'utente.
+   * Esegue lo scroll automatico verso il ticket dell'utente.
    */
   useEffect(() => {
     if (mioItem && scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       const index = items.findIndex(i => i._id === mioItem._id);
       if (index !== -1) {
-        // L'applicazione calcola lo scroll in base all'altezza dei ticket
+        // Calcola lo scroll in base all'altezza dei ticket
         const scrollAmount = index * 128; 
         container.scrollTo({ top: scrollAmount, behavior: "smooth" });
       }
@@ -227,7 +227,7 @@ export default function PaginaUtente() {
             ref={scrollContainerRef}
             className="w-full h-full flex flex-col items-center overflow-y-scroll snap-y snap-mandatory no-scrollbar py-[25vh] md:py-[35vh]"
           >
-            {/* L'applicazione renderizza la lista dei ticket ordinata dal più basso al più alto */}
+            {/* Renderizza la lista dei ticket ordinata dal più basso al più alto */}
             {items.map((item) => (
               <TicketScalabile
                 key={item._id}
