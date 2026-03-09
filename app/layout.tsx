@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="it">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         
-        {/*<ConnectionBanner /> */}
+        <ConnectionBanner />
         
         {children}
       </body>
