@@ -13,9 +13,32 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
+# L'applicazione ignora i file di configurazione dei container
+Dockerfile
+compose.yaml
+docker-compose.yml
+
+# --- SEGRETI E VARIABILI (Fondamentale) ---
+# Il sistema esclude i file contenenti credenziali sensibili
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- DIPENDENZE ---
+# L'applicazione non carica le librerie installate (verranno installate nel container)
+node_modules/
+jspm_packages/
+
+# --- BUILD E OUTPUT ---
+# Il sistema ignora le cartelle di compilazione e i log
+.next/
+out/
+build/
+dist/
+.npm
+.eslintcache
 
 # production
 /build
@@ -41,3 +64,11 @@ yarn-error.log*
 next-env.d.ts
 
 .prettier.json
+
+# --- SISTEMA ---
+# Il sistema ignora i file generati dal sistema operativo
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
