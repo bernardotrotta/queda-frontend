@@ -1,203 +1,195 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { QueueItem } from "@/types/queue";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { io } from "socket.io-client";
+import { Queue, QueueItem } from "@/types/queue";
+import Link from "next/link";
 
-export default function DashboardOrganizzatore() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const idCoda = searchParams.get("coda");
+/**
+ * Gestisce la visualizzazione, l'avanzamento e l'eliminazione della coda.
+ */
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const idCoda = searchParams.get("coda");
 
-    const [items, setItems] = useState<QueueItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+  const [queue, setQueue] = useState<Queue | null>(null);
+  const [items, setItems] = useState<QueueItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    // Recupera lo stato aggiornato della coda e dei ticket
-    const fetchCoda = useCallback(async () => {
-        try {
-            // Esegue la richiesta all'endpoint della coda
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`);
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Estrae il messaggio di errore centralizzato
-                throw new Error(data.error || "Impossibile caricare i dati della coda");
-            }
-
-            // Accede al payload annidato nel controller
-            const itemsList = data.payload?.payload?.items || [];
-            setItems(itemsList);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [idCoda]);
-
-    useEffect(() => {
-        if (!idCoda) {
-            router.push("/account");
-            return;
-        }
-
-        fetchCoda();
-
-        // Stabilisce la connessione WebSocket
-        const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
-        
-        socket.on("message", () => {
-            // Riesegue il fetch alla ricezione di un segnale broadcast
-            fetchCoda();
-        });
-
-        // Mantiene il polling di sicurezza ogni 10 secondi per evitare desincronizzazioni
-        const interval = setInterval(fetchCoda, 10000);
-
-        return () => {
-            clearInterval(interval);
-            socket.disconnect();
-        };
-    }, [idCoda, fetchCoda]);
-
-    const handleProssimoUtente = async () => {
+  /**
+   * L'applicazione recupera i dettagli della coda e la lista dei ticket dal server.
+   */
+  const fetchDati = useCallback(async () => {
+    if (!idCoda) return;
     const token = localStorage.getItem("token");
-    // Inizializza temporaneamente il socket per inviare il segnale di aggiornamento
+
+    try {
+      const headers = { "Authorization": `Bearer ${token}` };
+
+      // Il sistema interroga gli endpoint per ottenere lo stato attuale
+      const queueRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, { headers });
+      const queueData = await queueRes.json();
+      
+      const itemsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, { headers });
+      const itemsData = await itemsRes.json();
+
+      if (queueRes.ok && itemsRes.ok) {
+        setQueue(queueData.payload.queue);
+        setItems(itemsData.payload?.payload?.items || []);
+      }
+    } catch (err) {
+      console.error("Errore sincronizzazione dati:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [idCoda]);
+
+  useEffect(() => {
+    fetchDati();
+
+    // L'applicazione apre un canale WebSocket per aggiornamenti in tempo reale
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
+    socket.on("message", () => {
+      fetchDati();
+    });
+
+    return () => { socket.disconnect(); };
+  }, [fetchDati]);
+
+  /**
+   * Il sistema effettua il dequeue dell'utente successivo e notifica i client.
+   */
+  const handleProssimo = async () => {
+    const token = localStorage.getItem("token");
     const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
 
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, {
-            method: "PATCH",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, {
+        method: "PATCH",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
-        if (!response.ok) throw new Error("Errore avanzamento coda");
+      if (!response.ok) throw new Error("Nessun utente in coda");
 
-        // Invia un messaggio broadcast per forzare il ricaricamento dei tempi su tutti i client
-        socket.emit('message', 'refresh_data'); 
-        
-        await fetchCoda();
-    } catch (err: any) { 
-        alert(err.message); 
+      // L'applicazione invia un segnale di aggiornamento a tutti gli utenti
+      socket.emit("message", "update");
+      fetchDati();
+    } catch (err: any) {
+      alert(err.message);
     } finally {
-        socket.disconnect(); // Chiude la connessione dopo l'invio
+      socket.disconnect();
     }
-};
+  };
 
-    const handleEliminaCoda = async () => {
-        const confirmDelete = window.confirm("Sei sicuro di voler eliminare definitivamente questa coda?");
-        if (!confirmDelete) return;
+  /**
+   * L'applicazione richiede la cancellazione definitiva della coda al backend.
+   */
+  const handleEliminaCoda = async () => {
+    const conferma = window.confirm("Sei sicuro di voler eliminare questa coda? Tutti i ticket verranno persi.");
+    if (!conferma) return;
 
-        const token = localStorage.getItem("token");
-        if (!token) return;
+    const token = localStorage.getItem("token");
+    try {
+      // Il sistema invia una richiesta DELETE all'endpoint della coda
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
-        try {
-            // Esegue l'eliminazione atomica di coda e ticket
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, {
-                method: "DELETE",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
-            });
+      if (!response.ok) throw new Error("Errore durante l'eliminazione");
 
-            const data = await response.json();
+      // In caso di successo, l'applicazione reindirizza l'organizzatore al suo profilo
+      router.push("/account");
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
-            if (!response.ok) {
-                // Gestisce il rifiuto se l'utente non è l'owner (per sicurezza)
-                throw new Error(data.error || "Errore durante l'eliminazione");
-            }
+  const inAttesa = items.filter(i => i.status === 'waiting');
+  const inServizio = items.find(i => i.status === 'serving');
 
-            // Torna alla gestione account dopo la rimozione dal database
-            router.push("/account");
-        } catch (err: any) {
-            alert(err.message);
-        }
-    };
+  if (loading) return <div className="p-12 text-center font-bold text-indigo-600 animate-pulse">Caricamento...</div>;
 
-    // Filtra gli utenti in base agli stati definiti nello schema
-    const utentiInAttesa = items.filter(item => item.status === 'waiting');
-    const utenteInServizio = items.find(item => item.status === 'serving');
+  return (
+    <main className="min-h-screen bg-slate-100 p-8 flex flex-col items-center">
+      <div className="max-w-4xl w-full">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tighter italic">
+              {queue?.name}
+            </h1>
+            <p className="text-slate-400 font-mono text-xs uppercase">ID: {idCoda?.toUpperCase()}</p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleEliminaCoda}
+              className="px-6 py-2 bg-red-50 text-red-600 font-bold rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all text-xs uppercase"
+            >
+              Elimina Coda
+            </button>
+            <Link href="/account">
+              <button className="px-6 py-2 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-2xl hover:border-indigo-500 transition-all text-xs uppercase">
+                Esci
+              </button>
+            </Link>
+          </div>
+        </header>
 
-    if (loading) return (
-        <div className="min-h-screen bg-slate-100 flex items-center justify-center font-bold text-indigo-600 animate-pulse">
-            CARICAMENTO...
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="bg-white p-8 rounded-[2rem] shadow-xl border-b-8 border-indigo-600 text-center">
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Attualmente servito</h2>
+              {inServizio ? (
+                <div className="animate-in zoom-in duration-300">
+                  <span className="text-8xl font-black text-indigo-600 tracking-tighter">
+                    #{inServizio.ticket}
+                  </span>
+                  <p className="mt-4 text-slate-500 font-bold text-xs uppercase">Utente: {inServizio.userId.toUpperCase()}</p>
+                </div>
+              ) : (
+                <span className="text-4xl font-black text-slate-200 uppercase italic">In attesa...</span>
+              )}
+            </div>
+
+            <button
+              onClick={handleProssimo}
+              disabled={inAttesa.length === 0}
+              className="w-full py-6 bg-indigo-600 text-white font-black text-xl rounded-[2rem] shadow-lg hover:bg-indigo-700 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-20 uppercase tracking-tighter"
+            >
+              Chiama Prossimo
+            </button>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Lista d'attesa ({inAttesa.length})</h2>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {inAttesa.length > 0 ? (
+                inAttesa.sort((a,b) => a.ticket - b.ticket).map((item) => (
+                  <div key={item._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span className="font-black text-slate-700 text-lg">#{item.ticket}</span>
+                    <span className="text-[10px] font-mono text-slate-400">ID: {item.userId.toUpperCase()}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 text-slate-300 italic text-sm">Nessuno in fila</div>
+              )}
+            </div>
+          </div>
         </div>
-    );
+      </div>
+    </main>
+  );
+}
 
-    return (
-        <main className="min-h-screen bg-slate-100 p-8 flex flex-col items-center">
-            <div className="w-full max-w-4xl bg-white rounded-3xl p-8 shadow-lg mb-8 flex justify-between items-center border-b-4 border-indigo-500">
-                <div>
-                    <h1 className="text-sm font-black text-slate-500 uppercase tracking-widest">Codice Coda</h1>
-                    <p className="text-xl font-mono font-black text-indigo-600 uppercase">
-                        {idCoda?.toUpperCase()}
-                    </p>
-                </div>
-                <div className="text-right">
-                    <p className="text-sm font-bold text-slate-400 uppercase">In Attesa</p>
-                    <p className="text-4xl font-black text-slate-700">{utentiInAttesa.length}</p>
-                </div>
-            </div>
-
-            {error && <p className="mb-4 text-red-500 font-bold bg-red-50 px-4 py-2 rounded-xl">{error}</p>}
-
-            <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-1 space-y-4">
-                    <div className="bg-white p-6 rounded-3xl shadow-md text-center border-2 border-indigo-50">
-                        <p className="text-xs font-black text-slate-400 uppercase mb-2">Ora Servito</p>
-                        <p className="text-6xl font-black text-indigo-600">
-                            {utenteInServizio ? `#${utenteInServizio.ticket}` : "--"}
-                        </p>
-                    </div>
-
-                    <button
-                        onClick={handleProssimoUtente}
-                        disabled={utentiInAttesa.length === 0}
-                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-8 rounded-3xl shadow-xl transition-all transform active:scale-95 disabled:opacity-50 disabled:grayscale"
-                    >
-                        CHIAMA PROSSIMO
-                    </button>
-
-                    <button
-                        onClick={handleEliminaCoda}
-                        className="w-full bg-white text-red-500 border-2 border-red-100 font-bold py-4 rounded-2xl hover:bg-red-50 transition-all uppercase text-sm"
-                    >
-                        Elimina Coda
-                    </button>
-
-                    <button
-                        onClick={() => router.push("/account")}
-                        className="w-full bg-slate-50 text-slate-400 font-bold py-2 rounded-xl hover:text-slate-600 transition-all text-xs uppercase"
-                    >
-                        Torna all'Account
-                    </button>
-                </div>
-
-                <div className="md:col-span-2 bg-white rounded-3xl p-6 shadow-md overflow-hidden">
-                    <h2 className="text-lg font-bold text-slate-700 mb-4 px-2 uppercase tracking-tight">Prossimi in lista</h2>
-                    <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
-                        {utentiInAttesa.length > 0 ? (
-                            utentiInAttesa.map((u) => (
-                                <div key={u._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                    <div className="flex flex-col">
-                                        <span className="font-black text-indigo-600 text-lg">#{u.ticket}</span>
-                                        <span className="font-bold text-slate-600 lowercase opacity-80">
-                                            @{u.payload?.username || "anonimo"}
-                                        </span>
-                                    </div>
-                                    <span className="text-xs font-mono text-slate-400">
-                                        {new Date(u.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-center text-slate-400 py-10 italic">Nessun utente in attesa</p>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </main>
-    );
+/**
+ * Esporta la dashboard garantendo la compatibilità con il build statico di Next.js tramite Suspense.
+ */
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-200 flex items-center justify-center font-black text-indigo-600 uppercase">Sincronizzazione in corso...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
 }
