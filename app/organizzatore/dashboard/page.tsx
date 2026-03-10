@@ -120,7 +120,7 @@ function DashboardContent() {
             <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tighter italic">
               {queue?.name}
             </h1>
-            <p className="text-slate-400 font-mono text-xs uppercase">ID: {idCoda?.slice(-6)}</p>
+            <p className="text-slate-400 font-mono text-xs uppercase">ID: {idCoda?.toUpperCase()}</p>
           </div>
           <div className="flex gap-3">
             <button 
@@ -146,7 +146,7 @@ function DashboardContent() {
                   <span className="text-8xl font-black text-indigo-600 tracking-tighter">
                     #{inServizio.ticket}
                   </span>
-                  <p className="mt-4 text-slate-500 font-bold text-xs uppercase">Utente: {inServizio.userId.slice(-6).toUpperCase()}</p>
+                  <p className="mt-4 text-slate-500 font-bold text-xs uppercase">Utente: {inServizio.userId.toUpperCase()}</p>
                 </div>
               ) : (
                 <span className="text-4xl font-black text-slate-200 uppercase italic">In attesa...</span>
@@ -169,7 +169,7 @@ function DashboardContent() {
                 inAttesa.sort((a,b) => a.ticket - b.ticket).map((item) => (
                   <div key={item._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <span className="font-black text-slate-700 text-lg">#{item.ticket}</span>
-                    <span className="text-[10px] font-mono text-slate-400">ID: {item.userId.slice(-6).toUpperCase()}</span>
+                    <span className="text-[10px] font-mono text-slate-400">ID: {item.userId.toUpperCase()}</span>
                   </div>
                 ))
               ) : (
