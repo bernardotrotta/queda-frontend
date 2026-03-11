@@ -31,7 +31,7 @@ export default function Login() {
 
       if (!response.ok) {
         // Extracts the centralized error message provided by the error management middleware
-        throw new Error(data.error || "Impossibile completare l'accesso");
+        throw new Error(data.error || "Unable to complete login");
       }  
       
       // Stores the token contained in the success response payload
@@ -72,7 +72,7 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full mb-4 p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all text-l font-mono"
-            placeholder="esempio@mail.com"
+            placeholder="example@mail.com"
           />
 
           <label className="block px-4 text-[12px] font-bold text-slate-400 mb-2 tracking-wide uppercase">
@@ -92,14 +92,14 @@ export default function Login() {
             disabled={loading}
             className="w-full mt-4 bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50"
           >
-            {loading ? "Accesso in corso..." : "Accedi"}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </div>
 
         <div className="relative flex py-5 items-center">
           <div className="grow border-t border-slate-200"></div>
           <span className="shrink mx-4 text-slate-400 text-sm font-bold uppercase text-center">
-            Oppure
+            Or
           </span>
           <div className="grow border-t border-slate-200"></div>
         </div>
@@ -109,7 +109,7 @@ export default function Login() {
             type="button"
             className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-700 hover:text-slate-200 transition-all duration-300 uppercase text-sm"
           >
-            Registrati
+            Sign Up
           </button>
         </Link>
       </form>

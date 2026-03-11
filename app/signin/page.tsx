@@ -26,7 +26,7 @@ export default function SignIn() {
 
     // Executes a preliminary validation of the password matching
     if (formData.password !== formData.confirmPassword) {
-      setError("Le password non coincidono");
+      setError("Passwords do not match");
       return;
     }
 
@@ -47,7 +47,7 @@ export default function SignIn() {
 
       if (!response.ok) {
         // Extracts the specific error message (example: "User already exists")
-        throw new Error(data.error || "Errore durante la creazione dell'account");
+        throw new Error(data.error || "Error while creating the account");
       }
 
       // Redirects to the access page after the successful registration
@@ -86,7 +86,7 @@ export default function SignIn() {
               required
               onChange={handleChange}
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono"
-              placeholder="Il tuo nome"
+              placeholder="Your name"
             />
           </div>
 
@@ -100,7 +100,7 @@ export default function SignIn() {
               required
               onChange={handleChange}
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono"
-              placeholder="esempio@mail.com"
+              placeholder="example@mail.com"
             />
           </div>
 
@@ -128,7 +128,7 @@ export default function SignIn() {
               required
               onChange={handleChange}
               className="w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 border-transparent focus:border-indigo-500 outline-none transition-all font-mono"
-              placeholder="Ripeti password"
+              placeholder="Repeat password"
             />
           </div>
 
@@ -137,17 +137,17 @@ export default function SignIn() {
             disabled={loading}
             className="w-full mt-4 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50"
           >
-            {loading ? "Registrazione..." : "Registrati"}
+            {loading ? "Registering..." : "Sign Up"}
           </button>
         </div>
 
         <p className="text-center text-slate-500 text-sm mt-6">
-          Hai già un account?{" "}
+          Already have an account?{" "}
           <Link
             href="/login"
             className="text-indigo-600 font-bold hover:underline"
           >
-            Accedi
+            Login
           </Link>
         </p>
       </form>

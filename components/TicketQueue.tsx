@@ -6,35 +6,35 @@ import { QueueItem } from "@/types/queue";
 interface TicketProps {
     item: QueueItem;
     isUser: boolean;
-    tempoAttesaTotaleMs: number; // Value (in milliseconds) received from the backend 
+    totalWaitTimeMs: number; // Value (in milliseconds) received from the backend 
 }
 
-export default function TicketQueue({ item, isUser, tempoAttesaTotaleMs }: TicketProps) {
+export default function TicketQueue({ item, isUser, totalWaitTimeMs }: TicketProps) {
     // Manages the local countdown for the arrival of our own turn
-    const [secondiRimanenti, setSecondiRimanenti] = useState(Math.floor(tempoAttesaTotaleMs / 1000));
+    const [remainingSeconds, setRemainingSeconds] = useState(Math.floor(totalWaitTimeMs / 1000));
 
     // Synchronizes the local countdown each time the server sends a new estimate
     useEffect(() => {
         // Updates the internal state with the new value of estimated wait
-        setSecondiRimanenti(Math.floor(tempoAttesaTotaleMs / 1000));
-    }, [tempoAttesaTotaleMs]);
+        setRemainingSeconds(Math.floor(totalWaitTimeMs / 1000));
+    }, [totalWaitTimeMs]);
 
     useEffect(() => {
         // Interrupts the timer if the user has already been served or if the time has run out
-        if (item.status === 'served' || item.status === 'quit' || secondiRimanenti <= 0) return;
+        if (item.status === 'served' || item.status === 'quit' || remainingSeconds <= 0) return;
 
         // Decrements the counter each second for visual fluency
         const timer = setInterval(() => {
-            setSecondiRimanenti((prev) => (prev > 0 ? prev - 1 : 0));
+            setRemainingSeconds((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [item.status, secondiRimanenti]);
+    }, [item.status, remainingSeconds]);
 
     // Formats the remaining duration in minutes and seconds
-    const formattaTempo = (secondi: number) => {
-        const m = Math.floor(Math.max(0, secondi) / 60);
-        const s = Math.max(0, secondi) % 60;
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(Math.max(0, seconds) / 60);
+        const s = Math.max(0, seconds) % 60;
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
@@ -53,11 +53,11 @@ export default function TicketQueue({ item, isUser, tempoAttesaTotaleMs }: Ticke
             {isUser && (
                 <div className="relative z-10 flex flex-col items-end animate-in fade-in duration-300">
                     <span className="text-[10px] font-bold text-slate-400 uppercase leading-none tracking-widest">
-                        {item.status === 'serving' ? 'Tuo Turno' : 'Arrivo Stimato'}
+                        {item.status === 'serving' ? 'Your Turn' : 'Estimated Arrival'}
                     </span>
                     <span className="text-xl font-mono font-bold text-indigo-600">
                         {/* Manages the 'serving' state as visual priority */}
-                        {item.status === 'serving' ? "ORA" : formattaTempo(secondiRimanenti)}
+                        {item.status === 'serving' ? "NOW" : formatTime(remainingSeconds)}
                     </span>
                 </div>
             )}
@@ -65,7 +65,7 @@ export default function TicketQueue({ item, isUser, tempoAttesaTotaleMs }: Ticke
             {/* Optional visual indicator for the tickets while pending the other users */}
             {!isUser && item.status === 'serving' && (
                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
-                    In Servizio
+                    In Service
                 </span>
             )}
         </div>

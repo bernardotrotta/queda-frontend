@@ -41,11 +41,11 @@ export default function AccountPage() {
 
       const userRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me`, { headers });
       const userData = await userRes.json();
-      if (!userRes.ok) throw new Error(userData.error || "Errore profilo");
+      if (!userRes.ok) throw new Error(userData.error || "Profile error");
 
       const queuesRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me/queues`, { headers });
       const queuesData = await queuesRes.json();
-      if (!queuesRes.ok) throw new Error(queuesData.error || "Errore code create");
+      if (!queuesRes.ok) throw new Error(queuesData.error || "Error fetching created queues");
 
       const itemsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/users/me/queues/items`, { headers });
       const itemsData = await itemsRes.json();
@@ -62,7 +62,7 @@ export default function AccountPage() {
       setQueues(queuesData.payload.queues || []);
 
     } catch (error: any) {
-      console.error("Errore recupero dati:", error.message);
+      console.error("Error fetching data:", error.message);
       localStorage.removeItem("token");
       router.push("/login");
     } finally {
@@ -98,9 +98,9 @@ export default function AccountPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Errore aggiornamento");
+      if (!response.ok) throw new Error(data.error || "Update error");
 
-      alert("Modifica completata con successo");
+      alert("Update completed successfully");
       setEditingType("none");
       setFormData({ username: "", password: "", confirmPassword: "" });
 
@@ -123,7 +123,7 @@ export default function AccountPage() {
 
   const handleDeleteAccount = async () => {
     const confirmDelete = window.confirm(
-      "ATTENZIONE: Questa azione eliminerà permanentemente il tuo profilo e tutte le tue code. Procedere?"
+      "WARNING: This action will permanently delete your profile and all your queues. Proceed?"
     );
     if (!confirmDelete) return;
 
@@ -134,7 +134,7 @@ export default function AccountPage() {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
-      if (!response.ok) throw new Error("Impossibile eliminare l'account");
+      if (!response.ok) throw new Error("Unable to delete account");
       handleLogout();
     } catch (error: any) {
       alert(error.message);
@@ -143,7 +143,7 @@ export default function AccountPage() {
 
   if (loading) return (
     <div className="min-h-screen bg-slate-200 flex items-center justify-center font-bold text-indigo-600 animate-pulse uppercase tracking-widest">
-      Caricamento profilo...
+      Loading profile...
     </div>
   );
 
@@ -162,7 +162,7 @@ export default function AccountPage() {
               </div>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
-              <button onClick={() => setEditingType("username")} className="px-4 py-2 border-2 border-indigo-100 text-indigo-600 text-xs font-bold rounded-xl hover:bg-indigo-50 transition-all uppercase">Nome</button>
+              <button onClick={() => setEditingType("username")} className="px-4 py-2 border-2 border-indigo-100 text-indigo-600 text-xs font-bold rounded-xl hover:bg-indigo-50 transition-all uppercase">Name</button>
               <button onClick={() => setEditingType("password")} className="px-4 py-2 border-2 border-indigo-100 text-indigo-600 text-xs font-bold rounded-xl hover:bg-indigo-50 transition-all uppercase">Password</button>
               <button onClick={handleLogout} className="px-4 py-2 bg-red-50 text-red-600 font-bold text-xs rounded-xl hover:bg-red-100 transition-all uppercase">Logout</button>
             </div>
@@ -171,14 +171,14 @@ export default function AccountPage() {
           {editingType !== "none" && (
             <form onSubmit={handleUpdateInfo} className="mt-6 p-6 bg-slate-50 rounded-2xl border-2 border-indigo-100 animate-in fade-in slide-in-from-top-4 duration-300">
               <h3 className="text-sm font-black text-indigo-600 uppercase mb-4 tracking-tighter">
-                Modifica {editingType === "username" ? "Username" : "Password"}
+                Edit {editingType === "username" ? "Username" : "Password"}
               </h3>
               <div className="grid gap-4">
                 {editingType === "username" ? (
                   <input
                     type="text"
                     required
-                    placeholder="Inserisci nuovo nome"
+                    placeholder="Enter new name"
                     className="w-full p-3 bg-white border-2 border-slate-200 rounded-xl outline-none focus:border-indigo-500 font-mono text-slate-600"
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
@@ -188,7 +188,7 @@ export default function AccountPage() {
                     <input
                       type="password"
                       required
-                      placeholder="Nuova Password"
+                      placeholder="New Password"
                       className="w-full p-3 bg-white border-2 border-slate-200 rounded-xl outline-none focus:border-indigo-500 font-mono text-slate-600"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -196,7 +196,7 @@ export default function AccountPage() {
                     <input
                       type="password"
                       required
-                      placeholder="Conferma Password"
+                      placeholder="Confirm Password"
                       className="w-full p-3 bg-white border-2 border-slate-200 rounded-xl outline-none focus:border-indigo-500 font-mono text-slate-600"
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
@@ -204,8 +204,8 @@ export default function AccountPage() {
                   </>
                 )}
                 <div className="flex gap-2">
-                  <button type="submit" className="grow bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-all text-xs uppercase">Salva</button>
-                  <button type="button" onClick={() => setEditingType("none")} className="px-6 py-3 bg-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-300 transition-all text-xs uppercase">Annulla</button>
+                  <button type="submit" className="grow bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-all text-xs uppercase">Save</button>
+                  <button type="button" onClick={() => setEditingType("none")} className="px-6 py-3 bg-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-300 transition-all text-xs uppercase">Cancel</button>
                 </div>
               </div>
             </form>
@@ -213,7 +213,7 @@ export default function AccountPage() {
         </div>
 
         <div className="bg-white rounded-3xl p-8 shadow-xl">
-          <h2 className="text-xl font-black text-slate-700 uppercase tracking-tight mb-8">Partecipazioni Attive</h2>
+          <h2 className="text-xl font-black text-slate-700 uppercase tracking-tight mb-8">Active Participations</h2>
           <div className="grid gap-4">
             {participations.length > 0 ? (
               participations.map((item) => (
@@ -225,22 +225,22 @@ export default function AccountPage() {
                       <p className="text-[10px] text-slate-300 font-mono">ID: {item.queueId.slice(-6).toUpperCase()}</p>
                     </div>
                   </div>
-                  <Link href={`/utente?coda=${item.queueId}`}>
-                    <button className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all uppercase">Vai al Turno</button>
+                  <Link href={`/user?queueCode=${item.queueId}`}>
+                    <button className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all uppercase">Go to Turn</button>
                   </Link>
                 </div>
               ))
             ) : (
-              <p className="text-center py-10 text-slate-400 italic">Non sei attualmente in attesa in nessuna coda.</p>
+              <p className="text-center py-10 text-slate-400 italic">You are not currently waiting in any queue.</p>
             )}
           </div>
         </div>
 
         <div className="bg-white rounded-3xl p-8 shadow-xl">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-black text-slate-700 uppercase tracking-tight">Le Tue Code (Admin)</h2>
-            <Link href="/organizzatore/crea">
-              <button className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all uppercase">+ Crea</button>
+            <h2 className="text-xl font-black text-slate-700 uppercase tracking-tight">Your Queues (Admin)</h2>
+            <Link href="/organizer/create">
+              <button className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all uppercase">+ Create</button>
             </Link>
           </div>
           <div className="grid gap-4">
@@ -249,22 +249,22 @@ export default function AccountPage() {
                 <div key={q._id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-all group">
                   <div>
                     <h3 className="font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">{q.name}</h3>
-                    <p className="text-xs text-slate-400 font-mono uppercase mt-1">Codice: {q._id.toUpperCase()}</p>
+                    <p className="text-xs text-slate-400 font-mono uppercase mt-1">Code: {q._id.toUpperCase()}</p>
                   </div>
-                  <Link href={`/organizzatore/dashboard?coda=${q._id}`}>
+                  <Link href={`/organizer/dashboard?queueCode=${q._id}`}>
                     <button className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all uppercase">Dashboard</button>
                   </Link>
                 </div>
               ))
             ) : (
-              <p className="text-center py-10 text-slate-400 italic">Non hai ancora creato alcuna sessione.</p>
+              <p className="text-center py-10 text-slate-400 italic">You haven't created any sessions yet.</p>
             )}
           </div>
         </div>
 
         <div className="mt-8 flex justify-between items-center px-4">
           <Link href="/" className="text-slate-500 font-bold hover:text-indigo-600 transition-all text-sm uppercase">← Home</Link>
-          <button onClick={handleDeleteAccount} className="text-red-300 font-bold hover:text-red-500 transition-all text-[10px] uppercase tracking-widest">Elimina Account</button>
+          <button onClick={handleDeleteAccount} className="text-red-300 font-bold hover:text-red-500 transition-all text-[10px] uppercase tracking-widest">Delete Account</button>
         </div>
       </div>
     </main>

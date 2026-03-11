@@ -2,78 +2,78 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useRef, useState, useEffect, useCallback, Suspense } from "react";
-import TicketScalabile from "@/components/Wrapper";
+import ScalableTicket from "@/components/Wrapper";
 import { jwtDecode } from "jwt-decode";
 import { QueueItem } from "@/types/queue";
 import { io } from "socket.io-client";
 import Link from "next/link";
 
 /**
- * Manages the  main logic of theuser page, including ticket visualization
+ * Manages the main logic of the user page, including ticket visualization
  * and the waiting time calculation
  */
 function UserPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const codiceCoda = searchParams.get("coda");
+  const queueCode = searchParams.get("queueCode");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [items, setItems] = useState<QueueItem[]>([]);
-  const [mioItem, setMioItem] = useState<QueueItem | null>(null);
-  const [nomeCoda, setNomeCoda] = useState("Caricamento...");
+  const [myItem, setMyItem] = useState<QueueItem | null>(null);
+  const [queueName, setQueueName] = useState("Loading...");
   const [user, setUser] = useState<{ username: string; id: string } | null>(null);
-  const [numeroCorrente, setNumeroCorrente] = useState(0);
-  const [tempoAttesa, setTempoAttesa] = useState<number>(0);
+  const [currentNumber, setCurrentNumber] = useState(0);
+  const [waitingTime, setWaitingTime] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   /**
    * Recovers queue data and updates the user position
    */
-  const fetchDatiTicket = useCallback(async (userId?: string) => {
+  const fetchTicketData = useCallback(async (userId?: string) => {
     try {
       // The application calls the backend to obtain the ticket list
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueCode}/items`);
       const data = await response.json();
 
       if (response.ok) {
         // Extracts the ticket list from the server-nested payload
-        const listaTicket: QueueItem[] = data.payload?.payload?.items || [];
+        const ticketList: QueueItem[] = data.payload?.payload?.items || [];
         
         // Filters the active tickets excluding who has been served or has come out
-        const ticketAttivi = listaTicket
+        const activeTickets = ticketList
           .filter(i => i.status !== 'served' && i.status !== 'quit')
           .sort((a, b) => a.ticket - b.ticket);
           
-        setItems(ticketAttivi);
+        setItems(activeTickets);
 
         // Identifies the ticket currently in service
-        const inServizio = listaTicket.find(item => item.status === 'serving');
-        setNumeroCorrente(inServizio ? inServizio.ticket : (ticketAttivi[0]?.ticket || 0));
+        const inService = ticketList.find(item => item.status === 'serving');
+        setCurrentNumber(inService ? inService.ticket : (activeTickets[0]?.ticket || 0));
 
         // Links the ticket to the user and calculates the estimated waiting time
         if (userId) {
-          const trovato = listaTicket.find((item: QueueItem) => item.userId === userId && item.status !== 'quit');
-          if (trovato) {
-            setMioItem(trovato);
+          const found = ticketList.find((item: QueueItem) => item.userId === userId && item.status !== 'quit');
+          if (found) {
+            setMyItem(found);
             
             // Requests the waiting time based on the mean calculated by the backend
-            const resWait = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/items/${trovato._id}/waitingTime`);
+            const resWait = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/items/${found._id}/waitingTime`);
             const dataWait = await resWait.json();
             
             if (resWait.ok) {
-              setTempoAttesa(dataWait.payload?.['estimated time'] || 0);
+              setWaitingTime(dataWait.payload?.['estimated time'] || 0);
             }
           } else {
-            setMioItem(null);
+            setMyItem(null);
           }
         }
       }
     } catch (error) {
-      console.error("Errore rinfresco dati:", error);
+      console.error("Error refreshing data:", error);
     } finally {
       setLoading(false);
     }
-  }, [codiceCoda]);
+  }, [queueCode]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -85,53 +85,53 @@ function UserPageContent() {
         setUser({ username: decoded.username, id: decoded.id });
         currentUserId = decoded.id;
       } catch (e) {
-        console.error("Token non valido");
+        console.error("Invalid token");
       }
     }
 
-    const fetchInfoCoda = async () => {
+    const fetchQueueInfo = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueCode}`);
         const data = await response.json();
-        if (response.ok) setNomeCoda(data.payload?.queue?.name || "Coda");
+        if (response.ok) setQueueName(data.payload?.queue?.name || "Queue");
       } catch (err) {
-        console.error("Errore info coda:", err);
+        console.error("Error fetching queue info:", err);
       }
     };
 
-    if (codiceCoda) {
-      fetchInfoCoda();
-      fetchDatiTicket(currentUserId);
+    if (queueCode) {
+      fetchQueueInfo();
+      fetchTicketData(currentUserId);
 
       // Manages the updates in real time using WebSocket
       const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
       socket.on("message", () => {
-        fetchDatiTicket(currentUserId);
+        fetchTicketData(currentUserId);
       });
 
       return () => { socket.disconnect(); };
     }
-  }, [codiceCoda, fetchDatiTicket]);
+  }, [queueCode, fetchTicketData]);
 
   /**
    * Sends the request to abandon the queue and updates the state in the DB
    */
-  const handleAbbandonaCoda = async () => {
-    if (!mioItem) return;
-    if (!confirm("Vuoi davvero uscire? La tua posizione verrà persa.")) return;
+  const handleLeaveQueue = async () => {
+    if (!myItem) return;
+    if (!confirm("Do you really want to leave? Your position will be lost.")) return;
 
     const token = localStorage.getItem("token");
     try {
       // Calls the DELETE endpoint to set the state to 'quit'
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items/${mioItem._id}`, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueCode}/items/${myItem._id}`, 
         {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         }
       );
 
-      if (!response.ok) throw new Error("Errore durante l'uscita");
+      if (!response.ok) throw new Error("Error while leaving");
       router.replace("/");
     } catch (err: any) {
       alert(err.message);
@@ -142,7 +142,7 @@ function UserPageContent() {
     <div className="min-h-screen bg-slate-200 flex flex-col items-center">
       <header className="w-full px-8 py-4 bg-white flex items-center justify-between shadow-sm border-b-2">
         <h1 className="text-xl text-indigo-600 font-black uppercase italic tracking-tighter">
-          {nomeCoda}
+          {queueName}
         </h1>
         {user && (
           <Link href="/account">
@@ -158,24 +158,24 @@ function UserPageContent() {
 
       <main className="grow w-full flex flex-col md:flex-row items-center justify-center p-8 overflow-hidden">
         <div className="mx-[5%] flex flex-col items-center mb-8 md:mb-0">
-          <span className="font-black text-slate-400 uppercase text-xs mb-2 tracking-widest">Ora Servito</span>
+          <span className="font-black text-slate-400 uppercase text-xs mb-2 tracking-widest">Now Serving</span>
           <div className="size-48 bg-white rounded-full flex items-center justify-center border-8 border-indigo-500 shadow-2xl">
             <span className="text-7xl font-black text-indigo-600">
-              {numeroCorrente.toString().padStart(2, "0")}
+              {currentNumber.toString().padStart(2, "0")}
             </span>
           </div>
 
-          {mioItem && (
+          {myItem && (
             <div className="mt-8 flex flex-col items-center animate-in zoom-in duration-500">
               <div className="text-center bg-indigo-600 p-6 rounded-3xl shadow-xl border-4 border-white">
-                <p className="text-indigo-100 font-bold text-[10px] uppercase mb-1 tracking-widest">Il Tuo Turno</p>
-                <p className="text-5xl font-black text-white tracking-tighter">#{mioItem.ticket}</p>
+                <p className="text-indigo-100 font-bold text-[10px] uppercase mb-1 tracking-widest">Your Turn</p>
+                <p className="text-5xl font-black text-white tracking-tighter">#{myItem.ticket}</p>
               </div>
               <button
-                onClick={handleAbbandonaCoda}
+                onClick={handleLeaveQueue}
                 className="mt-6 text-slate-400 font-bold text-[10px] uppercase hover:text-red-500 tracking-widest transition-colors"
               >
-                Abbandona Coda
+                Leave Queue
               </button>
             </div>
           )}
@@ -190,12 +190,12 @@ function UserPageContent() {
             className="w-full h-full flex flex-col items-center overflow-y-scroll no-scrollbar py-[30vh]"
           >
             {items.map((item) => (
-              <TicketScalabile
+              <ScalableTicket
                 key={item._id}
                 item={item}
-                isUser={item._id === mioItem?._id}
+                isUser={item._id === myItem?._id}
                 containerRef={scrollContainerRef}
-                tempoAttesaTotaleMs={item._id === mioItem?._id ? tempoAttesa : 0}
+                totalWaitTimeMs={item._id === myItem?._id ? waitingTime : 0}
               />
             ))}
           </div>
@@ -208,11 +208,11 @@ function UserPageContent() {
 /**
  * Exports the page wrapped in a Suspense Boundary to support the pre-rendering of Next.js
  */
-export default function PaginaUtente() {
+export default function UserPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-slate-200 flex items-center justify-center font-black text-indigo-600 uppercase tracking-widest">
-        Caricamento...
+        Loading...
       </div>
     }>
       <UserPageContent />

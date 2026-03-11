@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QUEDA - Gestione Code",
-  description: "Sistema di gestione code in tempo reale",
+  title: "QUEDA - Queue Management",
+  description: "Real-time queue management system",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it">
+    <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         
         <ConnectionBanner />

@@ -6,10 +6,10 @@ import { jwtDecode } from "jwt-decode";
 import Link from "next/link";
 
 export default function Home() {
-  const [codiceCoda, setCodiceCoda] = useState("");
+  const [queueCode, setQueueCode] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<{ username: string; id: string } | null>(null);
-  const [erroreCoda, setError] = useState("");
+  const [queueError, setQueueError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -28,36 +28,36 @@ export default function Home() {
     }
   }, []);
 
-  const JoinTheQueue = async () => {
+  const joinQueue = async () => {
     setLoading(true);
-    setError("");
+    setQueueError("");
 
     const token = localStorage.getItem("token");
     if (!token || !isLoggedIn) {
-      setError("Please log in to join the queue.");
+      setQueueError("Please log in to join the queue.");
       setLoading(false);
       return;
     }
 
     try {
-      const resCheck = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
+      const resCheck = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueCode}/items`);
       const dataCheck = await resCheck.json();
 
       // Extracts the list of the double payload of the backend
-      const lista = dataCheck.payload?.payload?.items || [];
+      const list = dataCheck.payload?.payload?.items || [];
 
       // Considers the 'waiting' and the 'serving' tickets as active
-      const ticketAttivo = lista.find((i: any) =>
+      const activeTicket = list.find((i: any) =>
         i.userId === user?.id && (i.status === 'waiting' || i.status === 'serving')
       );
 
-      if (ticketAttivo) {
-        router.push(`/user?coda=${codiceCoda}`);
+      if (activeTicket) {
+        router.push(`/user?queueCode=${queueCode}`);
         return;
       }
 
       // Sends the request of the queuing, delegating the ticket management to the server
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueCode}/items`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,12 +70,12 @@ export default function Home() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Errore durante l'iscrizione alla coda.");
+      if (!response.ok) throw new Error(data.error || "Error while joining the queue.");
 
       // Navigates to the user page once confirmed the atomic operation
-      router.push(`/utente?coda=${codiceCoda}`);
+      router.push(`/user?queueCode=${queueCode}`);
     } catch (err: any) {
-      setError(err.message);
+      setQueueError(err.message);
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function Home() {
         ) : (
           <Link href="/login">
             <button className="px-8 bg-indigo-600 text-white font-bold py-3 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
-              Accedi
+              Login
             </button>
           </Link>
         )}
@@ -105,34 +105,34 @@ export default function Home() {
           <h1 className="text-5xl font-black text-center text-indigo-600 mb-8 uppercase tracking-tighter">QUEDA</h1>
 
           <div className="mb-4">
-            <label className="block px-4 uppercase text-[12px] font-bold text-slate-400 mb-2 tracking-wide">Codice Sessione</label>
+            <label className="block px-4 uppercase text-[12px] font-bold text-slate-400 mb-2 tracking-wide">Session Code</label>
             <input
               type="text"
-              placeholder="Inserisci ID Coda"
-              value={codiceCoda}
-              className={`w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 outline-none transition-all font-mono ${erroreCoda ? "border-red-500" : "border-transparent focus:border-indigo-500"}`}
-              onChange={(e) => setCodiceCoda(e.target.value)}
+              placeholder="Enter Queue ID"
+              value={queueCode}
+              className={`w-full p-4 bg-slate-100 rounded-2xl text-slate-700 border-2 outline-none transition-all font-mono ${queueError ? "border-red-500" : "border-transparent focus:border-indigo-500"}`}
+              onChange={(e) => setQueueCode(e.target.value)}
             />
-            {erroreCoda && <p className="text-red-500 text-xs mt-2 px-4 font-bold">{erroreCoda}</p>}
+            {queueError && <p className="text-red-500 text-xs mt-2 px-4 font-bold">{queueError}</p>}
 
             <button
-              onClick={JoinTheQueue}
-              disabled={!codiceCoda || loading}
+              onClick={joinQueue}
+              disabled={!queueCode || loading}
               className="w-full mt-4 bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50"
             >
-              {loading ? "Entrando..." : "Partecipa come Utente"}
+              {loading ? "Joining..." : "Join as User"}
             </button>
           </div>
 
           <div className="relative flex py-5 items-center">
             <div className="grow border-t border-slate-200"></div>
-            <span className="shrink mx-4 text-slate-400 text-sm font-bold uppercase">Oppure</span>
+            <span className="shrink mx-4 text-slate-400 text-sm font-bold uppercase">Or</span>
             <div className="grow border-t border-slate-200"></div>
           </div>
 
-          <Link href={isLoggedIn ? "/organizzatore/crea" : "/login"}>
+          <Link href={isLoggedIn ? "/organizer/create" : "/login"}>
             <button className="w-full border-2 border-slate-200 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-50 transition-all">
-              Crea una Nuova Coda
+              Create a New Queue
             </button>
           </Link>
         </div>

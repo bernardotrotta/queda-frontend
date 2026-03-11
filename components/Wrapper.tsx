@@ -8,10 +8,10 @@ interface WrapperProps {
     item: QueueItem;
     isUser: boolean;
     containerRef: RefObject<HTMLDivElement | null>;
-    tempoAttesaTotaleMs: number; // Receives a time estimate from the PaginaUtente component
+    totalWaitTimeMs: number; // Receives a time estimate from the UserPage component
 }
 
-export default function TicketScalable({ item, isUser, containerRef, tempoAttesaTotaleMs }: WrapperProps) {
+export default function ScalableTicket({ item, isUser, containerRef, totalWaitTimeMs }: WrapperProps) {
     const elementRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0.8);
     const [opacity, setOpacity] = useState(0.3);
@@ -53,11 +53,11 @@ export default function TicketScalable({ item, isUser, containerRef, tempoAttesa
             }}
         >
             <div className="w-full max-w-sm px-4">
-                {/* Trasmits data and the time estimate to the graphic component of the ticket */}
+                {/* Transmits data and the time estimate to the graphic component of the ticket */}
                 <TicketQueue
                     item={item} 
                     isUser={isUser} 
-                    tempoAttesaTotaleMs={tempoAttesaTotaleMs}
+                    totalWaitTimeMs={totalWaitTimeMs}
                 />
             </div>
         </div>

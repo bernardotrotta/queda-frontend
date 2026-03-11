@@ -12,7 +12,7 @@ import Link from "next/link";
 function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const idCoda = searchParams.get("coda");
+  const queueId = searchParams.get("queueCode");
 
   const [queue, setQueue] = useState<Queue | null>(null);
   const [items, setItems] = useState<QueueItem[]>([]);
@@ -21,18 +21,18 @@ function DashboardContent() {
   /**
    * The application gets the queue details and the ticket list from the server
    */
-  const fetchDati = useCallback(async () => {
-    if (!idCoda) return;
+  const fetchData = useCallback(async () => {
+    if (!queueId) return;
     const token = localStorage.getItem("token");
 
     try {
       const headers = { "Authorization": `Bearer ${token}` };
 
       // The system asks the endpoints to obtain the actual state
-      const queueRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, { headers });
+      const queueRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueId}`, { headers });
       const queueData = await queueRes.json();
       
-      const itemsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, { headers });
+      const itemsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueId}/items`, { headers });
       const itemsData = await itemsRes.json();
 
       if (queueRes.ok && itemsRes.ok) {
@@ -40,42 +40,42 @@ function DashboardContent() {
         setItems(itemsData.payload?.payload?.items || []);
       }
     } catch (err) {
-      console.error("Errore sincronizzazione dati:", err);
+      console.error("Data synchronization error:", err);
     } finally {
       setLoading(false);
     }
-  }, [idCoda]);
+  }, [queueId]);
 
   useEffect(() => {
-    fetchDati();
+    fetchData();
 
     // The application opens a WebSocket channel for real time updates
     const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
     socket.on("message", () => {
-      fetchDati();
+      fetchData();
     });
 
     return () => { socket.disconnect(); };
-  }, [fetchDati]);
+  }, [fetchData]);
 
   /**
    * The system does the dequeue of the next user and notifies the clients
    */
-  const handleProssimo = async () => {
+  const handleNext = async () => {
     const token = localStorage.getItem("token");
     const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}/items`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueId}/items`, {
         method: "PATCH",
         headers: { "Authorization": `Bearer ${token}` }
       });
 
-      if (!response.ok) throw new Error("Nessun utente in coda");
+      if (!response.ok) throw new Error("No users in queue");
 
       // The application sends an update signal to all users
       socket.emit("message", "update");
-      fetchDati();
+      fetchData();
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -86,19 +86,19 @@ function DashboardContent() {
   /**
    * The application requests the permanent cancellation of the queue to the backend
    */
-  const handleEliminaCoda = async () => {
-    const conferma = window.confirm("Sei sicuro di voler eliminare questa coda? Tutti i ticket verranno persi.");
-    if (!conferma) return;
+  const handleDeleteQueue = async () => {
+    const confirm = window.confirm("Are you sure you want to delete this queue? All tickets will be lost.");
+    if (!confirm) return;
 
     const token = localStorage.getItem("token");
     try {
       // The system sends a DELETE request to the queue endpoint
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${queueId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
 
-      if (!response.ok) throw new Error("Errore durante l'eliminazione");
+      if (!response.ok) throw new Error("Error during deletion");
 
       // In case of a success, the application redirects the organizer to his profile
       router.push("/account");
@@ -107,10 +107,10 @@ function DashboardContent() {
     }
   };
 
-  const inAttesa = items.filter(i => i.status === 'waiting');
-  const inServizio = items.find(i => i.status === 'serving');
+  const waitingItems = items.filter(i => i.status === 'waiting');
+  const servingItem = items.find(i => i.status === 'serving');
 
-  if (loading) return <div className="p-12 text-center font-bold text-indigo-600 animate-pulse">Caricamento...</div>;
+  if (loading) return <div className="p-12 text-center font-bold text-indigo-600 animate-pulse">Loading...</div>;
 
   return (
     <main className="min-h-screen bg-slate-100 p-8 flex flex-col items-center">
@@ -120,18 +120,18 @@ function DashboardContent() {
             <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tighter italic">
               {queue?.name}
             </h1>
-            <p className="text-slate-400 font-mono text-xs uppercase">ID: {idCoda?.toUpperCase()}</p>
+            <p className="text-slate-400 font-mono text-xs uppercase">ID: {queueId?.toUpperCase()}</p>
           </div>
           <div className="flex gap-3">
             <button 
-              onClick={handleEliminaCoda}
+              onClick={handleDeleteQueue}
               className="px-6 py-2 bg-red-50 text-red-600 font-bold rounded-2xl border-2 border-red-100 hover:bg-red-100 transition-all text-xs uppercase"
             >
-              Elimina Coda
+              Delete Queue
             </button>
             <Link href="/account">
               <button className="px-6 py-2 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-2xl hover:border-indigo-500 transition-all text-xs uppercase">
-                Esci
+                Exit
               </button>
             </Link>
           </div>
@@ -140,40 +140,40 @@ function DashboardContent() {
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div className="bg-white p-8 rounded-4xl shadow-xl border-b-8 border-indigo-600 text-center">
-              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Attualmente servito</h2>
-              {inServizio ? (
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Currently serving</h2>
+              {servingItem ? (
                 <div className="animate-in zoom-in duration-300">
                   <span className="text-8xl font-black text-indigo-600 tracking-tighter">
-                    #{inServizio.ticket}
+                    #{servingItem.ticket}
                   </span>
-                  <p className="mt-4 text-slate-500 font-bold text-xs uppercase">Utente: {inServizio.userId.toUpperCase()}</p>
+                  <p className="mt-4 text-slate-500 font-bold text-xs uppercase">User: {servingItem.userId.toUpperCase()}</p>
                 </div>
               ) : (
-                <span className="text-4xl font-black text-slate-200 uppercase italic">In attesa...</span>
+                <span className="text-4xl font-black text-slate-200 uppercase italic">Waiting...</span>
               )}
             </div>
 
             <button
-              onClick={handleProssimo}
-              disabled={inAttesa.length === 0}
+              onClick={handleNext}
+              disabled={waitingItems.length === 0}
               className="w-full py-6 bg-indigo-600 text-white font-black text-xl rounded-4xl shadow-lg hover:bg-indigo-700 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-20 uppercase tracking-tighter"
             >
-              Chiama Prossimo
+              Call Next
             </button>
           </div>
 
           <div className="bg-white p-8 rounded-4xl shadow-xl border border-slate-100">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Lista d'attesa ({inAttesa.length})</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Waiting list ({waitingItems.length})</h2>
             <div className="space-y-3 max-h-100 overflow-y-auto pr-2 custom-scrollbar">
-              {inAttesa.length > 0 ? (
-                inAttesa.sort((a,b) => a.ticket - b.ticket).map((item) => (
+              {waitingItems.length > 0 ? (
+                waitingItems.sort((a,b) => a.ticket - b.ticket).map((item) => (
                   <div key={item._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <span className="font-black text-slate-700 text-lg">#{item.ticket}</span>
                     <span className="text-[10px] font-mono text-slate-400">ID: {item.userId.toUpperCase()}</span>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-10 text-slate-300 italic text-sm">Nessuno in fila</div>
+                <div className="text-center py-10 text-slate-300 italic text-sm">No one in line</div>
               )}
             </div>
           </div>
@@ -188,7 +188,7 @@ function DashboardContent() {
  */
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-200 flex items-center justify-center font-black text-indigo-600 uppercase">Sincronizzazione in corso...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-slate-200 flex items-center justify-center font-black text-indigo-600 uppercase">Syncing...</div>}>
       <DashboardContent />
     </Suspense>
   );

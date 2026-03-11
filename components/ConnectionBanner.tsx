@@ -42,7 +42,7 @@ export default function ConnectionBanner() {
 
   return (
     <div className="fixed top-0 left-0 w-full bg-red-600 text-white text-center py-2 font-black text-xs z-9999 animate-pulse shadow-xl uppercase tracking-widest">
-        Il server non risponde - Verifica la connessione
+        Server not responding - Check your connection
     </div>
   );
 }
