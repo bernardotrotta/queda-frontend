@@ -7,7 +7,7 @@ import { Queue, QueueItem } from "@/types/queue";
 import Link from "next/link";
 
 /**
- * Gestisce la visualizzazione, l'avanzamento e l'eliminazione della coda.
+ * Manages the visualization, the progress and the elimination of the queue
  */
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -19,7 +19,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
 
   /**
-   * L'applicazione recupera i dettagli della coda e la lista dei ticket dal server.
+   * The application gets the queue details and the ticket list from the server
    */
   const fetchDati = useCallback(async () => {
     if (!idCoda) return;
@@ -28,7 +28,7 @@ function DashboardContent() {
     try {
       const headers = { "Authorization": `Bearer ${token}` };
 
-      // Il sistema interroga gli endpoint per ottenere lo stato attuale
+      // The system asks the endpoints to obtain the actual state
       const queueRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, { headers });
       const queueData = await queueRes.json();
       
@@ -49,7 +49,7 @@ function DashboardContent() {
   useEffect(() => {
     fetchDati();
 
-    // L'applicazione apre un canale WebSocket per aggiornamenti in tempo reale
+    // The application opens a WebSocket channel for real time updates
     const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
     socket.on("message", () => {
       fetchDati();
@@ -59,7 +59,7 @@ function DashboardContent() {
   }, [fetchDati]);
 
   /**
-   * Il sistema effettua il dequeue dell'utente successivo e notifica i client.
+   * The system does the dequeue of the next user and notifies the clients
    */
   const handleProssimo = async () => {
     const token = localStorage.getItem("token");
@@ -73,7 +73,7 @@ function DashboardContent() {
 
       if (!response.ok) throw new Error("Nessun utente in coda");
 
-      // L'applicazione invia un segnale di aggiornamento a tutti gli utenti
+      // The application sends an update signal to all users
       socket.emit("message", "update");
       fetchDati();
     } catch (err: any) {
@@ -84,7 +84,7 @@ function DashboardContent() {
   };
 
   /**
-   * L'applicazione richiede la cancellazione definitiva della coda al backend.
+   * The application requests the permanent cancellation of the queue to the backend
    */
   const handleEliminaCoda = async () => {
     const conferma = window.confirm("Sei sicuro di voler eliminare questa coda? Tutti i ticket verranno persi.");
@@ -92,7 +92,7 @@ function DashboardContent() {
 
     const token = localStorage.getItem("token");
     try {
-      // Il sistema invia una richiesta DELETE all'endpoint della coda
+      // The system sends a DELETE request to the queue endpoint
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${idCoda}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
@@ -100,7 +100,7 @@ function DashboardContent() {
 
       if (!response.ok) throw new Error("Errore durante l'eliminazione");
 
-      // In caso di successo, l'applicazione reindirizza l'organizzatore al suo profilo
+      // In case of a success, the application redirects the organizer to his profile
       router.push("/account");
     } catch (err: any) {
       alert(err.message);
@@ -139,7 +139,7 @@ function DashboardContent() {
 
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-6">
-            <div className="bg-white p-8 rounded-[2rem] shadow-xl border-b-8 border-indigo-600 text-center">
+            <div className="bg-white p-8 rounded-4xl shadow-xl border-b-8 border-indigo-600 text-center">
               <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Attualmente servito</h2>
               {inServizio ? (
                 <div className="animate-in zoom-in duration-300">
@@ -156,15 +156,15 @@ function DashboardContent() {
             <button
               onClick={handleProssimo}
               disabled={inAttesa.length === 0}
-              className="w-full py-6 bg-indigo-600 text-white font-black text-xl rounded-[2rem] shadow-lg hover:bg-indigo-700 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-20 uppercase tracking-tighter"
+              className="w-full py-6 bg-indigo-600 text-white font-black text-xl rounded-4xl shadow-lg hover:bg-indigo-700 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-20 uppercase tracking-tighter"
             >
               Chiama Prossimo
             </button>
           </div>
 
-          <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
+          <div className="bg-white p-8 rounded-4xl shadow-xl border border-slate-100">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Lista d'attesa ({inAttesa.length})</h2>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-3 max-h-100 overflow-y-auto pr-2 custom-scrollbar">
               {inAttesa.length > 0 ? (
                 inAttesa.sort((a,b) => a.ticket - b.ticket).map((item) => (
                   <div key={item._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -184,7 +184,7 @@ function DashboardContent() {
 }
 
 /**
- * Esporta la dashboard garantendo la compatibilità con il build statico di Next.js tramite Suspense.
+ * Exports the dashboard guaranteeing the compatibility with the static build of Next.js through Suspense.
  */
 export default function DashboardPage() {
   return (

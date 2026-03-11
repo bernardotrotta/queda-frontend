@@ -51,7 +51,7 @@ export default function AccountPage() {
       const itemsData = await itemsRes.json();
 
       if (itemsRes.ok) {
-        // Filtra escludendo esplicitamente sia 'served' che 'quit' per mostrare solo i ticket attivi
+        // Filters explicitly excluding both 'served' and 'quit' to show only active tickets
         const activeTickets = (itemsData.payload.items || []).filter(
           (item: QueueItem) => item.status === 'waiting' || item.status === 'serving'
         );
@@ -79,8 +79,8 @@ export default function AccountPage() {
     const token = localStorage.getItem("token");
 
     try {
-      // Invia tutti i parametri necessari per soddisfare i validatori del backend
-      // Se si modifica solo lo username, invia password fittizie che verranno ignorate dal controller grazie al campo 'type'
+      // Sends all the necessary parameters to satisfy the backend validators
+      // If modifying only the username, sends fake passwords which will be ignored by the controller thanks to the 'type' field
       const payload = {
         username: editingType === "username" ? formData.username : (user?.username || ""),
         password: editingType === "password" ? formData.password : "123",
@@ -104,7 +104,7 @@ export default function AccountPage() {
       setEditingType("none");
       setFormData({ username: "", password: "", confirmPassword: "" });
 
-      // Ricarica i dati per aggiornare l'interfaccia utente
+      // Refreshes data to update the user interface
       if (editingType === "username") {
           window.location.reload();
       } else {

@@ -2,16 +2,16 @@
 
 import { useEffect, useRef, useState, RefObject } from "react";
 import { QueueItem } from "@/types/queue";
-import TicketCoda from "@/components/TicketCoda";
+import TicketQueue from "@/components/TicketQueue";
 
 interface WrapperProps {
     item: QueueItem;
     isUser: boolean;
     containerRef: RefObject<HTMLDivElement | null>;
-    tempoAttesaTotaleMs: number; // Riceve la stima temporale dal componente PaginaUtente
+    tempoAttesaTotaleMs: number; // Receives a time estimate from the PaginaUtente component
 }
 
-export default function TicketScalabile({ item, isUser, containerRef, tempoAttesaTotaleMs }: WrapperProps) {
+export default function TicketScalable({ item, isUser, containerRef, tempoAttesaTotaleMs }: WrapperProps) {
     const elementRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0.8);
     const [opacity, setOpacity] = useState(0.3);
@@ -28,15 +28,15 @@ export default function TicketScalabile({ item, isUser, containerRef, tempoAttes
             const elementCenter = elementRect.top + elementRect.height / 2;
             const distance = Math.abs(containerCenter - elementCenter);
 
-            // Calcola la scala in base alla vicinanza dell'elemento al centro del contenitore
+            // Calculates the scale based on the distance from the element to the center of the container
             const newScale = Math.max(0.7, 1.1 - distance / 400);
             setScale(newScale);
 
-            // Applica l'opacità piena solo quando l'elemento è focalizzato al centro
+            // Applies maximum opacity only when the element is focused at the center
             setOpacity(newScale > 0.98 ? 1 : 0.3);
         };
 
-        // Ascolta l'evento di scroll del contenitore per aggiornare le trasformazioni
+        // Listens to the scroll event of the container to update the transformations
         container.addEventListener("scroll", handleScroll);
         handleScroll();
         return () => container.removeEventListener("scroll", handleScroll);
@@ -45,7 +45,7 @@ export default function TicketScalabile({ item, isUser, containerRef, tempoAttes
     return (
         <div
             ref={elementRef}
-            // Definisce l'area di snap e la transizione fluida per lo scaling visivo
+            // Defines the snap area and the fluid transition for the visual scaling
             className="snap-center w-full flex items-center justify-center transition-all duration-100 shrink-0 h-12 my-6"
             style={{ 
                 transform: `scale(${scale})`, 
@@ -53,8 +53,8 @@ export default function TicketScalabile({ item, isUser, containerRef, tempoAttes
             }}
         >
             <div className="w-full max-w-sm px-4">
-                {/* Trasmette i dati e la stima temporale al componente grafico del ticket */}
-                <TicketCoda 
+                {/* Trasmits data and the time estimate to the graphic component of the ticket */}
+                <TicketQueue
                     item={item} 
                     isUser={isUser} 
                     tempoAttesaTotaleMs={tempoAttesaTotaleMs}

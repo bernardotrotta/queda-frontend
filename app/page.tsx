@@ -14,7 +14,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Verifica la presenza di una sessione attiva al caricamento
+    // Checks for the presence of an active session when loading
     const token = localStorage.getItem("token");
     if (token) {
       try {
@@ -22,19 +22,19 @@ export default function Home() {
         setIsLoggedIn(true);
         setUser({ username: decoded.username, id: decoded.id });
       } catch (e) {
-        // Rimuove il token se risulta corrotto o scaduto
+        // Removes the token if it is corrupted or expired
         localStorage.removeItem("token");
       }
     }
   }, []);
 
-  const partecipaAllaCoda = async () => {
+  const JoinTheQueue = async () => {
     setLoading(true);
     setError("");
 
     const token = localStorage.getItem("token");
     if (!token || !isLoggedIn) {
-      setError("Effettua il login per partecipare alla coda.");
+      setError("Please log in to join the queue.");
       setLoading(false);
       return;
     }
@@ -43,28 +43,28 @@ export default function Home() {
       const resCheck = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
       const dataCheck = await resCheck.json();
 
-      // Estrae la lista dal doppio payload del backend
+      // Extracts the list of the double payload of the backend
       const lista = dataCheck.payload?.payload?.items || [];
 
-      // Considera attivi solo i ticket 'waiting' o 'serving'
+      // Considers the 'waiting' and the 'serving' tickets as active
       const ticketAttivo = lista.find((i: any) =>
         i.userId === user?.id && (i.status === 'waiting' || i.status === 'serving')
       );
 
       if (ticketAttivo) {
-        router.push(`/utente?coda=${codiceCoda}`);
+        router.push(`/user?coda=${codiceCoda}`);
         return;
       }
 
-      // Invia la richiesta di accodamento delegando al server la gestione del ticket
+      // Sends the request of the queuing, delegating the ticket management to the server
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // Invia il token per l'estrazione dell'ID utente nel middleware
+          "Authorization": `Bearer ${token}` // Sends the token for the extraction of the user ID in the middleware
         },
         body: JSON.stringify({
-          // Inserisce lo username nel payload Mixed del modello Item
+          // Puts the username in the Mixed payload of the Item model
           payload: { username: user?.username }
         })
       });
@@ -72,7 +72,7 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Errore durante l'iscrizione alla coda.");
 
-      // Naviga alla pagina utente una volta confermata l'operazione atomica
+      // Navigates to the user page once confirmed the atomic operation
       router.push(`/utente?coda=${codiceCoda}`);
     } catch (err: any) {
       setError(err.message);
@@ -116,7 +116,7 @@ export default function Home() {
             {erroreCoda && <p className="text-red-500 text-xs mt-2 px-4 font-bold">{erroreCoda}</p>}
 
             <button
-              onClick={partecipaAllaCoda}
+              onClick={JoinTheQueue}
               disabled={!codiceCoda || loading}
               className="w-full mt-4 bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50"
             >

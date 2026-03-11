@@ -17,7 +17,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Invia le credenziali all'endpoint di autenticazione definito nel router
+      // Sends the credentials to the authentication endpoint defined in the router
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URI}/auth/login`,
         {
@@ -30,14 +30,14 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Estrae il messaggio d'errore centralizzato fornito dal middleware di gestione errori
+        // Extracts the centralized error message provided by the error management middleware
         throw new Error(data.error || "Impossibile completare l'accesso");
       }  
       
-      // Memorizza il token contenuto nel payload della risposta di successo
+      // Stores the token contained in the success response payload
       localStorage.setItem("token", data.payload.token);
 
-      // Reindirizza alla pagina principale dopo aver stabilito la sessione
+      // Redirects to the main page after establishing the session
       router.push("/");
     } catch (err: any) {
       setError(err.message);

@@ -9,8 +9,8 @@ import { io } from "socket.io-client";
 import Link from "next/link";
 
 /**
- * Gestisce la logica principale della pagina utente, inclusa la visualizzazione del ticket
- * e il calcolo del tempo di attesa.
+ * Manages the  main logic of theuser page, including ticket visualization
+ * and the waiting time calculation
  */
 function UserPageContent() {
   const searchParams = useSearchParams();
@@ -27,36 +27,36 @@ function UserPageContent() {
   const [loading, setLoading] = useState(true);
 
   /**
-   * Recupera i dati della coda e aggiorna la posizione dell'utente.
+   * Recovers queue data and updates the user position
    */
   const fetchDatiTicket = useCallback(async (userId?: string) => {
     try {
-      // L'applicazione interroga il backend per ottenere la lista dei ticket
+      // The application calls the backend to obtain the ticket list
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items`);
       const data = await response.json();
 
       if (response.ok) {
-        // Estrae la lista dei ticket dal payload annidato del server
+        // Extracts the ticket list from the server-nested payload
         const listaTicket: QueueItem[] = data.payload?.payload?.items || [];
         
-        // Filtra i ticket attivi escludendo chi è servito o uscito
+        // Filters the active tickets excluding who has been served or has come out
         const ticketAttivi = listaTicket
           .filter(i => i.status !== 'served' && i.status !== 'quit')
           .sort((a, b) => a.ticket - b.ticket);
           
         setItems(ticketAttivi);
 
-        // Identifica il ticket attualmente in fase di servizio
+        // Identifies the ticket currently in service
         const inServizio = listaTicket.find(item => item.status === 'serving');
         setNumeroCorrente(inServizio ? inServizio.ticket : (ticketAttivi[0]?.ticket || 0));
 
-        // Collega il ticket all'utente e calcola il tempo di attesa stimato
+        // Links the ticket to the user and calculates the estimated waiting time
         if (userId) {
           const trovato = listaTicket.find((item: QueueItem) => item.userId === userId && item.status !== 'quit');
           if (trovato) {
             setMioItem(trovato);
             
-            // Richiede il tempo di attesa basato sulla media calcolata dal backend
+            // Requests the waiting time based on the mean calculated by the backend
             const resWait = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/items/${trovato._id}/waitingTime`);
             const dataWait = await resWait.json();
             
@@ -103,7 +103,7 @@ function UserPageContent() {
       fetchInfoCoda();
       fetchDatiTicket(currentUserId);
 
-      // Gestisce gli aggiornamenti in tempo reale tramite WebSocket
+      // Manages the updates in real time using WebSocket
       const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!);
       socket.on("message", () => {
         fetchDatiTicket(currentUserId);
@@ -114,7 +114,7 @@ function UserPageContent() {
   }, [codiceCoda, fetchDatiTicket]);
 
   /**
-   * Invia la richiesta per abbandonare la coda e aggiorna lo stato nel DB.
+   * Sends the request to abandon the queue and updates the state in the DB
    */
   const handleAbbandonaCoda = async () => {
     if (!mioItem) return;
@@ -122,7 +122,7 @@ function UserPageContent() {
 
     const token = localStorage.getItem("token");
     try {
-      // Chiama l'endpoint DELETE per impostare lo stato su 'quit'
+      // Calls the DELETE endpoint to set the state to 'quit'
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URI}/queues/${codiceCoda}/items/${mioItem._id}`, 
         {
@@ -182,8 +182,8 @@ function UserPageContent() {
         </div>
 
         <div className="w-full max-w-lg relative h-[60vh] md:h-[80vh]">
-          <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-slate-200 z-10 pointer-events-none" />
-          <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-slate-200 z-10 pointer-events-none" />
+          <div className="absolute top-0 w-full h-32 bg-linear-to-b from-slate-200 z-10 pointer-events-none" />
+          <div className="absolute bottom-0 w-full h-32 bg-linear-to-t from-slate-200 z-10 pointer-events-none" />
 
           <div
             ref={scrollContainerRef}
@@ -206,7 +206,7 @@ function UserPageContent() {
 }
 
 /**
- * Esporta la pagina avvolta in un Suspense Boundary per supportare il pre-rendering di Next.js.
+ * Exports the page wrapped in a Suspense Boundary to support the pre-rendering of Next.js
  */
 export default function PaginaUtente() {
   return (

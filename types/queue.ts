@@ -1,4 +1,4 @@
-// Rappresenta un singolo ticket all'interno di una coda
+// Represents a single ticket in a queue
 export interface QueueItem {
     _id: string;
     queueId: string;
@@ -18,7 +18,7 @@ export interface QueueItem {
     updatedAt: string;
 }
 
-// Rappresenta la struttura generale di una coda
+// Represents the general structure of a queue
 export interface Queue {
     _id: string;
     name: string;

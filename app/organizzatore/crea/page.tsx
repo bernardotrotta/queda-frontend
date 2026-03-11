@@ -17,35 +17,35 @@ export default function CreaCoda() {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      // Reindirizza al login se il token di sessione è assente
+      // Redirects to the login if the session token is absent
       router.push("/login");
       return;
     }
 
     try {
-      // Converte i minuti inseriti in millisecondi per il database
+      // Converts the entered minutes in milliseconds for the database
       const averageServingTimeMs = tempoStimatoMinuti * 60 * 1000;
 
-      // Invia la richiesta di creazione della coda al backend
+      // Sends the queue creation request to the backend
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URI}/queues`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // Fornisce l'identificativo dell'utente tramite il middleware
+          "Authorization": `Bearer ${token}`, // Gives the user identifier through the middleware
         },
         body: JSON.stringify({
-          name: nomeCoda, // Campo validato dal middleware queueNameChain
-          averageServingTime: averageServingTimeMs // Utilizza la chiave attesa dal controller
+          name: nomeCoda, // Field validated by the queueNameChain middleware
+          averageServingTime: averageServingTimeMs // Uses the key attended by the controller
         }),
       });
 
       const data = await response.json();
       if (!response.ok) {
-        // Gestisce i messaggi di errore standardizzati provenienti dal backend
+        // Manages the standardized error messages coming from the backend
         throw new Error(data.error || "Impossibile creare la coda");
       }
 
-      // Reindirizza alla gestione account dopo la creazione della risorsa
+      // Redirects to account management after the resource creation
       router.push("/account");
     } catch (err: any) {
       setError(err.message);

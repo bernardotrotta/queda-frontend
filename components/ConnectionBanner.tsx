@@ -7,37 +7,37 @@ export default function ConnectionBanner() {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    // Inizializza la connessione verso l'URI del backend definito nelle variabili d'ambiente 
+    // Initializes the connection towards the URI of the backend, defined in the environment variables
     const socket = io(process.env.NEXT_PUBLIC_BACKEND_URI!, {
-      reconnectionAttempts: Infinity, // Tenta la riconnessione all'infinito
-      timeout: 3000,                  // Riduce il tempo di attesa per rilevare il timeout
-      transports: ["websocket"],      // Forza l'uso di websocket per un rilevamento più rapido
+      reconnectionAttempts: Infinity, // Always tries to reconnect
+      timeout: 3000,                  // Reduces the waiting time to detect timeout
+      transports: ["websocket"],      // Forces the use of websocket for a quicker detection
     });
 
-    // Imposta lo stato offline se si verifica un errore di connessione iniziale
+    // Set the offline status if there is a first connection error
     socket.on("connect_error", () => {
       setIsOffline(true);
     });
 
-    // Rileva la perdita di connessione dopo che era stata stabilita
+    // Detects the loss of connection after it has been established
     socket.on("disconnect", (reason) => {
       if (reason === "io client disconnect" || reason === "transport close") {
         setIsOffline(true);
       }
     });
 
-    // Ripristina lo stato online non appena il server risponde
+    // Recovers the online status right when the server responds
     socket.on("connect", () => {
       setIsOffline(false);
     });
 
-    // Pulisce la connessione allo smontaggio del componente
+    // Cleans the connection when the component has been dismounted
     return () => {
       socket.disconnect();
     };
   }, []);
 
-  // Non mostra nulla se il server è raggiungibile
+  // Doesn't show anything is the server is online
   if (!isOffline) return null;
 
   return (

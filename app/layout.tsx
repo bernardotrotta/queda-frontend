@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ConnectionBanner from "@/components/ConnectionBanner"; // Importa il nuovo componente
+import ConnectionBanner from "@/components/ConnectionBanner"; // Imports the new component
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
